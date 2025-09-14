@@ -206,24 +206,6 @@
   .vida-bar { width: 44vw; }
   .turno-posicionavel, .turno-texto { font-size: 0.95rem; margin-top: 10px; }
 }
-
-/* Ensure absolute desktop positions are unset on small devices so elements stack nicely */
-@media (max-width: 900px) {
-  .coordenadas-bar,
-  .placar-futebol,
-  .button-container {
-    position: static !important;
-    left: unset !important;
-    right: unset !important;
-    top: unset !important;
-    bottom: unset !important;
-    transform: none !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-  /* Keep buttons slightly lifted from the bottom of the viewport */
-  .button-container { margin-top: 2.2vw; margin-bottom: 3vw; }
-}
 /* Ajuste de layout para posicionar elementos conforme imagem */
 .placar-futebol {
   position: absolute;
@@ -249,9 +231,8 @@
 
 .coordenadas-bar {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: calc(60px + 48px); /* placar top + estimated placar height */
+  left: 530px;
+  top: calc(90px + 36px + 30px); /* placar top + altura + margem menor */
   z-index: 9;
   display: flex;
   gap: 18px;
@@ -259,9 +240,6 @@
   border-radius: 8px;
   padding: 10px 24px;
   box-shadow: 0 2px 12px #000a;
-  min-width: 280px;
-  max-width: 520px;
-  box-sizing: border-box;
 }
 .turno-texto {
   display: block;
@@ -288,7 +266,7 @@
 .button-container {
   position: absolute;
   left: 50%;
-  bottom: 90px; /* reduced to better fit smaller screens */
+  bottom: 190px;
   transform: translateX(-50%);
   z-index: 10;
   background: rgba(34,34,34,0.18);
@@ -630,3 +608,5 @@ button#tras:hover {
   background-color: #0055cc;
   box-shadow: 0 4px 16px #4488ffcc;
 }
+
+

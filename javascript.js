@@ -116,7 +116,7 @@ function setup() {
   // Adiciona botão de recomeçar ao lado dos botões de ação
   if (!document.getElementById('recomecar')) {
     let btn = document.createElement('button');
-    btn.id = 'recomecar';
+    btn.id = 'recomecar';   
     btn.title = 'Recomeçar';
     btn.style = 'width:48px;height:48px;padding:0;background:#ffcc00;color:#222;border:none;border-radius:50%;cursor:pointer;display:none;display:flex;align-items:center;justify-content:center;';
     btn.onclick = recomecarJogo;
@@ -293,7 +293,14 @@ function moverTanque(direcao) {
 
 function mudarTurno() {
   turno = turno === 1 ? 2 : 1;
-  document.getElementById("turno").textContent = `Turno: Jogador ${turno}`;
+  // Exibe aviso centralizado
+  let aviso = document.createElement('div');
+  aviso.className = 'aviso-jogador-centro';
+  aviso.textContent = `Vez do Jogador ${turno}`;
+  document.body.appendChild(aviso);
+  setTimeout(() => {
+    aviso.remove();
+  }, 1200);
 }
 
 function recomecarJogo() {
@@ -318,5 +325,6 @@ if (typeof atualizarBarraVida !== 'function') {
     if (el) el.style.width = Math.max(0, Math.min(100, percentual)) + '%';
   }
 }
+
 
 
