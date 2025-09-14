@@ -117,9 +117,10 @@ function setup() {
   if (!document.getElementById('recomecar')) {
     let btn = document.createElement('button');
     btn.id = 'recomecar';
-    btn.textContent = 'Recomeçar';
-    btn.style = 'padding:10px 30px;font-size:18px;background:#ffcc00;color:#222;border:none;border-radius:6px;cursor:pointer;display:none;';
+    btn.title = 'Recomeçar';
+    btn.style = 'width:48px;height:48px;padding:0;background:#ffcc00;color:#222;border:none;border-radius:50%;cursor:pointer;display:none;display:flex;align-items:center;justify-content:center;';
     btn.onclick = recomecarJogo;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"><path fill="#222" d="M12 6V3l-5 5 5 5V8c2.76 0 5 2.24 5 5a5 5 0 1 1-5-5z"/></svg>`;
     let btnContainer = document.querySelector('.button-container');
     if (btnContainer) {
       btnContainer.appendChild(btn);
@@ -137,7 +138,7 @@ function draw() {
   // Tanque 1 invertido horizontalmente
   push();
   translate(tanque1.x, tanque1.y);
-  scale(-1, 1);
+  scale(-1.3, 1);
   if (vida[0] <= 0 || tanque1QuebradoTemp) {
     // Exibir o tanque quebrado sem inversão
     pop();
