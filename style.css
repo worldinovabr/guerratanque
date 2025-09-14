@@ -1,0 +1,327 @@
+/* Ícones dos botões de ação */
+.btn-icone {
+  vertical-align: middle;
+  width: 32px;
+  height: 32px;
+}
+.vida-placar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.soldado-icone {
+  width: 72px;
+  height: 72px;
+  max-width: unset;
+  max-height: unset;
+  margin: 0 8px;
+  filter: drop-shadow(0 1px 2px #000a);
+}
+.soldado-red {
+  filter: drop-shadow(0 1px 2px #000a);
+}
+.vida-bar-inner {
+  width: 100%;
+}
+/* Barras de vida estilo multiplayer */
+.barras-vida {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 18px;
+}
+.vida-bar {
+  width: 180px;
+  height: 18px;
+  background: #222;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px #000a;
+  overflow: hidden;
+  border: 2px solid #444;
+  position: relative;
+}
+.vida-green {
+  border-color: #4caf50;
+}
+.vida-red {
+  border-color: #e53935;
+}
+.vida-bar-inner {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(.4,2,.6,1);
+}
+.vida-green .vida-bar-inner {
+  background: linear-gradient(90deg, #4caf50 60%, #81c784 100%);
+}
+.vida-red .vida-bar-inner {
+  background: linear-gradient(90deg, #e53935 60%, #ff8a80 100%);
+}
+body {
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+input[type="number"] {
+  padding: 8px;
+  margin: 5px;
+  width: 100px;
+  border: 2px solid #444;
+  border-radius: 4px;
+  background-color: #333;
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+}
+.painel-jogo {
+  background: #222;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px #000a, 0 1.5px 0 #ffcc00 inset;
+  padding: 18px 0 10px 0;
+  margin-bottom: 18px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.painel-jogo h1 {
+  margin-bottom: 8px;
+  color: #ffcc00;
+  text-shadow: 1px 1px 2px #000, 0 2px 8px #ffcc0033;
+  font-size: 2.3rem;
+  font-family: 'Segoe UI Black', 'Segoe UI', sans-serif;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.placar-futebol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30,40,50,0.85);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px #000a;
+  padding: 8px 18px 8px 18px;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-width: 340px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 2px solid #222;
+  position: relative;
+}
+.placar-futebol .losangos {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.placar-futebol .losango {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  margin: 0 1px;
+  background: transparent;
+  border: 2.5px solid #4caf50;
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+.placar-futebol .losango.preenchido {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+.placar-futebol .losangos.red .losango {
+  border-color: #e53935;
+}
+.placar-futebol .losangos.red .losango.preenchido {
+  background: #e53935;
+  border-color: #e53935;
+}
+.placar-futebol .placar-central {
+  background: #222;
+  border-radius: 6px;
+  color: #4caf50;
+  font-size: 1.5em;
+  font-weight: 900;
+  padding: 0 18px;
+  margin: 0 10px;
+  min-width: 48px;
+  text-align: center;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  box-shadow: none;
+}
+.placar-futebol .placar-central .score-red {
+  color: #e53935;
+  margin-left: 8px;
+}
+.placar-futebol .barra {
+  width: 2px;
+  height: 32px;
+  background: linear-gradient(to bottom, #aaa 60%, #222 100%);
+  margin: 0 8px;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+button#frente {
+  background-color: #44aa44;
+  color: white;
+}
+button#frente:hover {
+  background-color: #2e7d32;
+}
+button#tras {
+  background-color: #4488ff;
+  color: white;
+}
+button#tras:hover {
+  background-color: #0055cc;
+}
+::placeholder {
+  color: #aaa;
+}
+/* Corpo da página */
+body {
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Título */
+h1 {
+  margin-bottom: 10px;
+  color: #ffcc00;
+  text-shadow: 1px 1px 2px #000;
+}
+
+/* Canvas do jogo */
+canvas {
+  border: 3px solid #fff;
+  margin-bottom: 15px;
+  box-shadow: 0 0 10px #000;
+}
+
+/* Placar com efeito */
+#placar {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(90deg, #444, #222);
+  border: 2px solid #ffcc00;
+  border-radius: 10px;
+  padding: 10px 20px;
+  margin: 10px auto;
+  width: fit-content;
+  box-shadow: 0 0 15px #ffcc00;
+  text-shadow: 1px 1px 2px #000;
+  transition: all 0.3s ease;
+  animation: brilho 2s infinite alternate;
+}
+
+/* Animação de brilho */
+@keyframes brilho {
+  0% {
+    box-shadow: 0 0 10px #ffcc00;
+  }
+  100% {
+    box-shadow: 0 0 20px #ffcc00;
+  }
+}
+
+/* Turno */
+#turno {
+  font-size: 18px;
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+/* Campos de entrada */
+input[type="number"] {
+  padding: 8px;
+  margin: 5px;
+  width: 100px;
+  border: 2px solid #444;
+  border-radius: 4px;
+  background-color: #333;
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+}
+
+::placeholder {
+  color: #aaa;
+}
+
+/* Container dos botões */
+.button-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+/* Botões gerais */
+button {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  font-size: 20px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px #000a;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  position: relative;
+}
+
+/* Botão de disparar */
+button#disparar {
+  background-color: #ff4444;
+  color: white;
+  border: 3px solid #fff2;
+  box-shadow: 0 2px 8px #ff444488;
+}
+button#disparar:hover {
+  background-color: #cc0000;
+  box-shadow: 0 4px 16px #ff4444cc;
+}
+
+/* Botão de mover para frente */
+button#frente {
+  background-color: #44aa44;
+  color: white;
+  border: 3px solid #fff2;
+  box-shadow: 0 2px 8px #44aa4488;
+}
+button#frente:hover {
+  background-color: #2e7d32;
+  box-shadow: 0 4px 16px #44aa44cc;
+}
+
+/* Botão de mover para trás */
+button#tras {
+  background-color: #4488ff;
+  color: white;
+  border: 3px solid #fff2;
+  box-shadow: 0 2px 8px #4488ff88;
+}
+button#tras:hover {
+  background-color: #0055cc;
+  box-shadow: 0 4px 16px #4488ffcc;
+}

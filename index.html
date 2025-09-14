@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tanques por Coordenadas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Combate de Tanques</h1>
+    <div class="placar-futebol">
+      <span class="vida-placar">
+        <img src="https://copilot.microsoft.com/th/id/BCO.1beef63a-e481-4b80-839d-df59882c24e5.png" alt="Tanque Jogador 1" class="soldado-icone">
+        <div class="vida-bar vida-green">
+          <div class="vida-bar-inner" id="vida1"></div>
+        </div>
+      </span>
+      <span class="placar-central">
+        <span id="p1score">0</span>
+        <span class="barra"></span>
+        <span class="score-red" id="p2score">0</span>
+      </span>
+      <span class="vida-placar">
+        <div class="vida-bar vida-red">
+          <div class="vida-bar-inner" id="vida2"></div>
+        </div>
+        <img src="https://copilot.microsoft.com/th/id/BCO.bc4a1ed3-ec79-4b88-a8ab-4effee5a9e3d.png" alt="Tanque Jogador 2" class="soldado-icone soldado-red">
+      </span>
+    </div>
+  <div id="turno"></div>
+
+  <input type="number" id="coordX" placeholder="X alvo" />
+  <input type="number" id="coordY" placeholder="Y alvo" />
+  <input type="number" id="potencia" placeholder="Potência" min="1" max="20" />
+
+  <div class="button-container">
+    <button id="disparar" onclick="disparar()" title="Disparar">
+      <img src="https://img.icons8.com/ios-filled/32/ffffff/rocket--v1.png" alt="Disparar" class="btn-icone">
+    </button>
+    <button id="frente" onclick="moverTanque(1)" title="Mover para frente">
+      <img src="https://img.icons8.com/ios-filled/32/ffffff/forward--v1.png" alt="Frente" class="btn-icone">
+    </button>
+    <button id="tras" onclick="moverTanque(-1)" title="Mover para trás">
+      <img src="https://img.icons8.com/ios-filled/32/ffffff/back--v1.png" alt="Trás" class="btn-icone">
+    </button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+    // Exemplo de uso inicial (100% de vida)
+    // A função atualizarBarraVida está definida no JS principal
+    setTimeout(function() {
+      atualizarBarraVida('vida1', 100);
+      atualizarBarraVida('vida2', 100);
+    }, 100);
+      // Função para desenhar os losangos do placar
+      function desenharLosangos(id, total, preenchidos, cor) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let html = '';
+        for (let i = 0; i < total; i++) {
+          html += `<span class=\"losango${i < preenchidos ? ' preenchido' : ''}\"></span>`;
+        }
+        el.className = 'losangos ' + cor;
+        el.innerHTML = html;
+      }
+      // Inicialização padrão (ajuste conforme sua lógica de placar)
+      desenharLosangos('losangos1', 6, 0, 'green');
+      desenharLosangos('losangos2', 6, 0, 'red');
+      // Para atualizar dinamicamente, chame desenharLosangos com os valores corretos após cada jogada
+    </script>
+  <script src="javascript.js"></script>
+</body>
+</html>
