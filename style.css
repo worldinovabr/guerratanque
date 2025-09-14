@@ -23,8 +23,8 @@
 
 .coordenadas-bar {
   position: absolute;
-  left: 540px;
-  top: calc(90px + 36px + 90px); /* placar top + altura + margem ainda maior */
+  left: 530px;
+  top: calc(90px + 36px + 30px); /* placar top + altura + margem menor */
   z-index: 9;
   display: flex;
   gap: 18px;
@@ -48,7 +48,7 @@
 .button-container {
   position: absolute;
   left: 50%;
-  bottom: 155px;
+  bottom: 190px;
   transform: translateX(-50%);
   z-index: 10;
   background: rgba(34,34,34,0.18);
