@@ -1,3 +1,63 @@
+/* Ajuste de layout para posicionar elementos conforme imagem */
+.placar-futebol {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 40, 50, 0.973);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px #000a;
+  padding: 8px 18px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  min-width: 340px;
+  max-width: 480px;
+  border: 2px solid #222;
+}
+
+.coordenadas-bar {
+  position: absolute;
+  left: 540px;
+  top: calc(90px + 36px + 90px); /* placar top + altura + margem ainda maior */
+  z-index: 9;
+  display: flex;
+  gap: 18px;
+  background: rgba(34,34,34,0.18);
+  border-radius: 8px;
+  padding: 10px 24px;
+  box-shadow: 0 2px 12px #000a;
+}
+.coordenadas-bar input {
+  width: 80px;
+  font-size: 1em;
+  background: #222;
+  color: #fff;
+  border: 2px solid #444;
+  border-radius: 6px;
+
+  padding: 2px 0;
+  height: 10px;
+}
+
+.button-container {
+  position: absolute;
+  left: 50%;
+  bottom: 155px;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(34,34,34,0.18);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px #000a;
+  padding: 10px 24px;
+  display: flex;
+  gap: 24px;
+}
 /* Ícones dos botões de ação */
 .btn-icone {
   vertical-align: middle;
@@ -10,6 +70,8 @@
   gap: 6px;
 }
 .soldado-icone {
+  width: 28px !important;
+  height: 28px !important;
   width: 72px;
   height: 72px;
   max-width: unset;
@@ -85,6 +147,7 @@ input[type="number"] {
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+  
 }
 .painel-jogo h1 {
   margin-bottom: 8px;
@@ -96,7 +159,7 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+   gap: 12px;
 }
 .placar-futebol {
   display: flex;
@@ -143,6 +206,8 @@ input[type="number"] {
   border-color: #e53935;
 }
 .placar-futebol .placar-central {
+  font-size: 1em !important;
+  min-width: 20px !important;
   background: #222;
   border-radius: 6px;
   color: #4caf50;

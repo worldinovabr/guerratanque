@@ -27,11 +27,13 @@
         <img src="https://copilot.microsoft.com/th/id/BCO.bc4a1ed3-ec79-4b88-a8ab-4effee5a9e3d.png" alt="Tanque Jogador 2" class="soldado-icone soldado-red">
       </span>
     </div>
+    <div class="coordenadas-bar">
+      <input type="number" id="coordX" placeholder="X alvo" />
+      <input type="number" id="coordY" placeholder="Y alvo" />
+      <input type="number" id="potencia" placeholder="Potência" min="1" max="20" />
+    </div>
   <div id="turno"></div>
 
-  <input type="number" id="coordX" placeholder="X alvo" />
-  <input type="number" id="coordY" placeholder="Y alvo" />
-  <input type="number" id="potencia" placeholder="Potência" min="1" max="20" />
 
   <div class="button-container">
     <button id="disparar" onclick="disparar()" title="Disparar">
