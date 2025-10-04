@@ -94,15 +94,25 @@
   z-index: 1000;
   background: rgba(30,40,50,0.92);
   color: #ffcc00;
-  font-size: 2.2em;
-  font-weight: bold;
-  padding: 24px 48px;
-  border-radius: 18px;
-  box-shadow: 0 4px 32px #000a;
+  font-size: 1.2em; /* smaller */
+  font-weight: 700;
+  padding: 10px 18px; /* reduced padding */
+  border-radius: 10px; /* smaller radius */
+  box-shadow: 0 2px 12px #0008; /* lighter shadow */
   text-align: center;
   pointer-events: none;
   text-shadow: 1px 1px 8px #000, 0 2px 8px #ffcc0033;
   letter-spacing: 2px;
+}
+
+/* smaller centralized notice on very small screens */
+@media (max-width: 480px) {
+  .aviso-jogador-centro {
+    font-size: 1em;
+    padding: 8px 12px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+  }
 }
 /* Responsivo: aplicar ajustes para todas as telas pequenas (inclui paisagem e retrato) */
 @media (max-width: 900px) {
@@ -408,8 +418,9 @@
     max-width: 96vw !important;
     margin: 0 auto !important;
     border-radius: 12px !important;
-    background: rgba(34,34,34,0.5) !important;
-    box-shadow: 0 -6px 18px rgba(0,0,0,0.45) !important;
+    /* remove background card so controls float directly on canvas */
+    background: transparent !important;
+    box-shadow: none !important;
     padding: 8px 12px !important;
     z-index: 1001 !important; /* above canvas */
     display: flex !important;
@@ -437,9 +448,9 @@
   }
 
   .coord-item button {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 15px !important;
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 13px !important;
   }
 
   .coord-item span {
@@ -462,13 +473,13 @@
   }
 
   .action-buttons button {
-    width: 50px !important;
-    height: 50px !important;
+    width: 42px !important;
+    height: 42px !important;
   }
 
   .btn-icone {
-    width: 32px !important;
-    height: 32px !important;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   /* Reduce body padding so controls overlay inside canvas area */
@@ -895,6 +906,9 @@ canvas {
     gap: 15px;
     padding: 8px 10px;
     height: auto;
+    /* remove background card in tight landscape */
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .coord-controls {
@@ -908,8 +922,8 @@ canvas {
   }
 
   .coord-item button {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     font-size: 12px;
   }
 
@@ -924,13 +938,13 @@ canvas {
   }
 
   .action-buttons button {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
   }
 
   .btn-icone {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
   .vida-bar {
