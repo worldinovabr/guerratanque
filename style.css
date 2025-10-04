@@ -82,38 +82,8 @@
     gap: 2vw;
     box-sizing: border-box;
   }
-  .coordenadas-bar {
-    position: static;
-    width: 95vw;
-    max-width: 900px;
-    min-width: 320px;
-    margin: 2vw auto 0 auto;
-    border-radius: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 3vw;
-    background: rgba(34,34,34,0.18);
-    box-shadow: 0 2px 12px #000a;
-    padding: 2vw 0;
-    z-index: 9;
-    box-sizing: border-box;
-  }
-  .coordenadas-bar input {
-    width: 22vw;
-    min-width: 80px;
-    max-width: 180px;
-    font-size: 1.1em;
-    height: 32px;
-    padding: 2px 0;
-    background: #222;
-    color: #fff;
-    border: 2px solid #444;
-    border-radius: 6px;
-    text-align: center;
-    box-sizing: border-box;
-  }
-  .button-container {
+
+  .controls-container {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -122,18 +92,45 @@
     margin: 0;
     border-radius: 0;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 6vw;
+    gap: 2vh;
     background: rgba(34,34,34,0.95);
     box-shadow: 0 -2px 18px #000a;
-    padding: 2.5vh 0;
+    padding: 2vh 0;
     z-index: 100;
     box-sizing: border-box;
+    transform: none;
   }
-  .placar-futebol,
-  .coordenadas-bar,
-  .button-container {
+
+  .coord-controls {
+    gap: 4vw;
+  }
+
+  .coord-item {
+    gap: 2px;
+  }
+
+  .coord-item label {
+    font-size: 10px;
+  }
+
+  .coord-item button {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .coord-item span {
+    font-size: 14px;
+    min-width: 25px;
+  }
+
+  .action-buttons {
+    gap: 6vw;
+  }
+  .placar-futebol {
     left: unset !important;
     right: unset !important;
     top: unset !important;
@@ -160,11 +157,7 @@
     font-size: 1rem;
     padding: 6px 12px;
   }
-  .coordenadas-bar {
-    padding: 1.6vw 12px;
-    gap: 4vw;
-  }
-  .coordenadas-bar input { height: 36px; }
+
   .btn-icone {
     width: 10vw;
     height: 10vw;
@@ -201,7 +194,7 @@
 /* Refinamentos para celulares muito pequenos */
 @media (max-width: 480px) {
   canvas { max-width: 98vw; margin-top: 2.5vw; }
-  .placar-futebol, .coordenadas-bar, .button-container { width: 98vw; padding: 10px; gap: 3vw; }
+  .placar-futebol { width: 98vw; padding: 10px; gap: 3vw; }
   .placar-futebol { font-size: 0.95rem; }
   .btn-icone { width: 48px; height: 48px; }
   .vida-bar { width: 44vw; }
@@ -263,18 +256,6 @@
   border: 2px solid #222;
 }
 
-.coordenadas-bar {
-  position: absolute;
-  left: 530px;
-  top: calc(90px + 36px + 50px); /* placar top + altura + margem aumentada */
-  z-index: 9;
-  display: flex;
-  gap: 18px;
-  background: rgba(34,34,34,0.18);
-  border-radius: 8px;
-  padding: 10px 24px;
-  box-shadow: 0 2px 12px #000a;
-}
 .turno-texto {
   display: block;
   margin: 48px auto 0 auto;
@@ -285,19 +266,9 @@
   font-weight: 100;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.285);
 }
-.coordenadas-bar input {
-  width: 80px;
-  font-size: 1em;
-  background: #222;
-  color: #fff;
-  border: 2px solid #444;
-  border-radius: 6px;
 
-  padding: 2px 0;
-  height: 10px;
-}
-
-.button-container {
+/* Container principal dos controles */
+.controls-container {
   position: absolute;
   left: 50%;
   bottom: 190px;
@@ -307,6 +278,74 @@
   border-radius: 10px;
   box-shadow: 0 2px 12px #000a;
   padding: 10px 24px;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+}
+
+/* Controles de coordenadas */
+.coord-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.coord-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.coord-item label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px #000;
+  min-width: 25px;
+  text-align: center;
+}
+
+.coord-item button {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #777;
+  border-radius: 6px;
+  background: #444;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.coord-item button:hover {
+  background: #555;
+  border-color: #888;
+  transform: translateY(-1px);
+}
+
+.coord-item button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.coord-item span {
+  color: #ffcc00;
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 35px;
+  text-align: center;
+  text-shadow: 1px 1px 2px #000;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+/* Botões de ação */
+.action-buttons {
   display: flex;
   gap: 24px;
 }
