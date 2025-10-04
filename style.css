@@ -43,33 +43,7 @@
   
   .soldado-icone {
     width: 24px !important;
-    height: 24px !important;
-  }
-  
-  .turno-posicionavel, .turno-texto { 
-    font-size: 0.9rem; 
-    margin-top: 8px; 
-  }
-
-  .controls-container {
-    padding: 12px 8px;
-    gap: 10px;
-  }
-
-  .coord-controls {
-    max-width: 280px;
-    gap: 6px;
-  }
-
-  .coord-item {
-    min-width: 60px;
-  }
-
-  .coord-item button {
-    width: 28px;
-    height: 28px;
-    font-size: 16px;
-  }
+    }
 
   .coord-item span {
     font-size: 14px;
@@ -135,6 +109,32 @@
     width: 100vw;
     box-sizing: border-box;
     overflow-x: hidden;
+  .smoke {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    background: rgba(140,140,140,0.7);
+    border-radius: 50%;
+    filter: blur(6px);
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%, -50%);
+    animation: smoke-rise 1200ms linear forwards;
+  }
+
+  @keyframes smoke-rise {
+    0% {
+      transform: translate(-50%, -50%) scale(0.7);
+      opacity: 0.9;
+    }
+    70% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translate(-50%, -220%) scale(1.6);
+      opacity: 0;
+    }
+  }
   }
   canvas {
     display: block;
@@ -473,13 +473,13 @@
   }
 
   .action-buttons button {
-    width: 42px !important;
-    height: 42px !important;
+    width: 34px !important;
+    height: 34px !important;
   }
 
   .btn-icone {
-    width: 28px !important;
-    height: 28px !important;
+    width: 22px !important;
+    height: 22px !important;
   }
 
   /* Reduce body padding so controls overlay inside canvas area */
@@ -939,13 +939,13 @@ canvas {
   }
 
   .action-buttons button {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
   }
 
   .btn-icone {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 
   .vida-bar {

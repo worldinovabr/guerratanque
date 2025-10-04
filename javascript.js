@@ -361,4 +361,103 @@ if (typeof atualizarBarraVida !== 'function') {
 }
 
 
+// Plane spawner: aviao.png flies left->right, aviao1.png flies right->left
+;(function () {
+  const IMG_LR = 'assets/aviao.png';   // left -> right
+  const IMG_RL = 'assets/aviao1.png';  // right -> left
+  const BUFFER = 140;
+
+  function computeTop() {
+    const canvas = document.querySelector('canvas');
+    // If there's no canvas yet, place it around 25% down the viewport
+    if (!canvas) return Math.max(30, window.innerHeight * 0.25);
+    const r = canvas.getBoundingClientRect();
+    // Move planes lower over the background: use a larger fraction of canvas height
+    // If device is mobile in landscape, position planes even lower so they fly closer to the bottom
+    try {
+      const isMobileLandscape = window.matchMedia && window.matchMedia('(max-width: 900px) and (orientation: landscape)').matches;
+      const fraction = isMobileLandscape ? 0.42 : 0.28;
+      return r.top + Math.max(30, r.height * fraction);
+    } catch (e) {
+      return r.top + Math.max(30, r.height * 0.28);
+    }
+  }
+
+  function createPlane(dir) {
+    const el = document.createElement('img');
+    el.className = 'aviao-fly';
+    el.src = dir === 1 ? IMG_LR : IMG_RL;
+    el.style.position = 'fixed';
+    // use cached planeTopY if available so both planes share same height
+    const topY = typeof planeTopY !== 'undefined' ? planeTopY : computeTop();
+    el.style.top = topY + 'px';
+    el.style.zIndex = '1002';
+    el.style.pointerEvents = 'none';
+    // Initialize X based on direction
+    el._dir = dir;
+    el._speed = 180 + Math.min(220, window.innerWidth / 3);
+    // Size adjustments: default width, smaller for dir === -1
+    if (dir === 1) {
+      el._x = -BUFFER;
+      el.style.left = el._x + 'px';
+      el.style.width = '64px';
+      el.style.transform = 'translateY(-50%) scaleX(1)';
+    } else {
+      el._x = window.innerWidth + BUFFER;
+      el.style.left = el._x + 'px';
+      // make aviao1 smaller and flipped horizontally
+      el.style.width = '48px';
+      el.style.transform = 'translateY(-50%) scaleX(-1)';
+    }
+    document.body.appendChild(el);
+    return el;
+  }
+
+  // cache a single top value so all planes share the exact same vertical position
+  let planeTopY = computeTop();
+
+  let currentDir = 1;
+  let active = createPlane(currentDir);
+
+  window.addEventListener('resize', () => {
+    // recompute shared top and update for all planes
+    planeTopY = computeTop();
+    document.querySelectorAll('.aviao-fly').forEach(p => {
+      p.style.top = planeTopY + 'px';
+      p._speed = 180 + Math.min(220, window.innerWidth / 3);
+  // adjust sizes responsively (slightly smaller)
+  if (p._dir === 1) p.style.width = '64px';
+  else p.style.width = '48px';
+    });
+  });
+
+  let last = null;
+  function frame(ts) {
+    if (!last) last = ts;
+    const dt = (ts - last) / 1000;
+    last = ts;
+
+    if (active) {
+      active._x += active._dir * active._speed * dt;
+      active.style.left = active._x + 'px';
+
+      if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
+        // remove and spawn opposite
+        active.remove();
+        currentDir = -1;
+        active = createPlane(currentDir);
+      } else if (active._dir === -1 && active._x <= -BUFFER) {
+        active.remove();
+        currentDir = 1;
+        active = createPlane(currentDir);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+
+
 
