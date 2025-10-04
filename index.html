@@ -27,23 +27,43 @@
         <img src="https://copilot.microsoft.com/th/id/BCO.bc4a1ed3-ec79-4b88-a8ab-4effee5a9e3d.png" alt="Tanque Jogador 2" class="soldado-icone soldado-red">
       </span>
     </div>
-    <div class="coordenadas-bar">
-      <input type="number" id="coordX" placeholder="X alvo" />
-      <input type="number" id="coordY" placeholder="Y alvo" />
-      <input type="number" id="potencia" placeholder="Potência" min="1" max="20" />
-    </div>
   <div id="turno" class="turno-texto"></div>
 
-  <div class="button-container">
-    <button id="disparar" onclick="disparar()" title="Disparar">
-      <img src="https://img.icons8.com/ios-filled/32/ffffff/rocket--v1.png" alt="Disparar" class="btn-icone">
-    </button>
-    <button id="frente" onclick="moverTanque(1)" title="Mover para frente">
-      <img src="https://img.icons8.com/ios-filled/32/ffffff/forward--v1.png" alt="Frente" class="btn-icone">
-    </button>
-    <button id="tras" onclick="moverTanque(-1)" title="Mover para trás">
-      <img src="https://img.icons8.com/ios-filled/32/ffffff/back--v1.png" alt="Trás" class="btn-icone">
-    </button>
+  <div class="controls-container">
+    <!-- Controles de Coordenadas -->
+    <div class="coord-controls">
+      <div class="coord-item">
+        <label>X</label>
+        <button onclick="alterarValor('coordX', -10)">-</button>
+        <span id="coordX">400</span>
+        <button onclick="alterarValor('coordX', 10)">+</button>
+      </div>
+      <div class="coord-item">
+        <label>Y</label>
+        <button onclick="alterarValor('coordY', -10)">-</button>
+        <span id="coordY">300</span>
+        <button onclick="alterarValor('coordY', 10)">+</button>
+      </div>
+      <div class="coord-item">
+        <label>Pot</label>
+        <button onclick="alterarValor('potencia', -1)">-</button>
+        <span id="potencia">10</span>
+        <button onclick="alterarValor('potencia', 1)">+</button>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="action-buttons">
+      <button id="disparar" onclick="disparar()" title="Disparar">
+        <img src="https://img.icons8.com/ios-filled/32/ffffff/rocket--v1.png" alt="Disparar" class="btn-icone">
+      </button>
+      <button id="frente" onclick="moverTanque(1)" title="Mover para frente">
+        <img src="https://img.icons8.com/ios-filled/32/ffffff/forward--v1.png" alt="Frente" class="btn-icone">
+      </button>
+      <button id="tras" onclick="moverTanque(-1)" title="Mover para trás">
+        <img src="https://img.icons8.com/ios-filled/32/ffffff/back--v1.png" alt="Trás" class="btn-icone">
+      </button>
+    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
