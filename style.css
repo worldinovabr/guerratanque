@@ -50,7 +50,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 0;
+    padding: 0 0 15vh 0;
     margin: 0;
     min-height: 100vh;
     width: 100vw;
@@ -114,20 +114,21 @@
     box-sizing: border-box;
   }
   .button-container {
-    position: static;
-    width: 95vw;
-    max-width: 900px;
-    min-width: 320px;
-    margin: 3vw auto 0 auto;
-    border-radius: 16px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    margin: 0;
+    border-radius: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 6vw;
-    background: rgba(34,34,34,0.18);
-    box-shadow: 0 2px 18px #000a;
-    padding: 2vw 0;
-    z-index: 10;
+    background: rgba(34,34,34,0.95);
+    box-shadow: 0 -2px 18px #000a;
+    padding: 2.5vh 0;
+    z-index: 100;
     box-sizing: border-box;
   }
   .placar-futebol,
@@ -206,6 +207,39 @@
   .vida-bar { width: 44vw; }
   .turno-posicionavel, .turno-texto { font-size: 0.95rem; margin-top: 10px; }
 }
+
+/* Ajustes específicos para modo paisagem em celulares */
+@media (max-width: 900px) and (orientation: landscape) {
+  .button-container {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4vw !important;
+    background: rgba(34,34,34,0.95) !important;
+    box-shadow: 0 -2px 18px #000a !important;
+    padding: 1.5vh 0 !important;
+    z-index: 1000 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Ajustar tamanho dos botões em paisagem */
+  .btn-icone {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  /* Reduzir padding do body para dar mais espaço ao canvas */
+  body {
+    padding: 0 0 10vh 0 !important;
+  }
+}
 /* Ajuste de layout para posicionar elementos conforme imagem */
 .placar-futebol {
   position: absolute;
@@ -232,7 +266,7 @@
 .coordenadas-bar {
   position: absolute;
   left: 530px;
-  top: calc(90px + 36px + 30px); /* placar top + altura + margem menor */
+  top: calc(90px + 36px + 50px); /* placar top + altura + margem aumentada */
   z-index: 9;
   display: flex;
   gap: 18px;
