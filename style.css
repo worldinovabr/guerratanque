@@ -28,6 +28,7 @@
     padding: 8px 12px; 
     font-size: 0.9rem; 
     gap: 2vw;
+    margin-left: -10px;
   }
   
   .btn-icone { 
@@ -134,7 +135,7 @@
   }
   .placar-futebol {
     position: static;
-    margin: 1vw auto 0 auto;
+    margin: 1vw 8vw 0 0;      /* ← MARGEM DIREITA AUMENTADA PARA 8vw PARA PUXAR MAIS À ESQUERDA */
     width: 70vw;              /* ← REDUZIDO PARA 70vw */
     max-width: 70vw;          /* ← NUNCA EXCEDE 70% DA TELA */
     height: auto !important;  /* ← ALTURA AUTOMÁTICA PROPORCIONAL */
@@ -295,7 +296,7 @@
     padding: 1px 1px;         /* ← REDUZIDO AINDA MAIS */
     gap: 0.1vw;               /* ← REDUZIDO PARA 0.1vw */
     font-size: 0.45rem;       /* ← REDUZIDO DE 0.6rem PARA 0.45rem */
-    margin: 0.5vw auto 0 auto;
+    margin: 0.5vw 20vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 12vw PARA PUXAR MAIS À ESQUERDA */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
   }
   .btn-icone { width: 48px; height: 48px; }
@@ -334,7 +335,7 @@
     gap: 0.05vw;              /* ← REDUZIDO PARA 0.05vw */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
     border-radius: 3px;       /* ← REDUZIDO DE 4px PARA 3px */
-    margin: 0.5vw auto;       /* ← MARGEM REDUZIDA */
+    margin: 0.3vw 20vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 15vw PARA PUXAR MAIS À ESQUERDA */
   }
   
   .vida-bar { 
