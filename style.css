@@ -3,15 +3,28 @@
   position: absolute;
   left: 50%;
   top: 300px; /* Altere este valor para a posição vertical desejada */
-  transform: tr/* Refinamentos para celulares muito pequenos */
+  transform: translateX(-50%);
+  z-index: 20;
+  width: max-content;
+  margin: 0;
+  padding: 0.2em 1em;
+  background: none;
+  color: #fff;
+  font-size: 1.2em;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 1px 1px 2px #000a;
+  pointer-events: none;
+}
+/* Refinamentos para celulares muito pequenos */
 @media (max-width: 480px) {
   canvas { 
-    max-width: 98vw; 
+    max-width: 88vw; 
     margin-top: 2.5vw; 
   }
   
   .placar-futebol { 
-    width: 98vw; 
+    width: 68vw; 
     padding: 8px 12px; 
     font-size: 0.9rem; 
     gap: 2vw;
@@ -24,7 +37,7 @@
   
   .vida-bar { 
     width: 35vw; 
-    min-width: 60px;
+    min-width: 35px;
   }
   
   .soldado-icone {
@@ -70,18 +83,6 @@
     width: 50px;
     height: 50px;
   }
-}-50%);
-  z-index: 20;
-  width: max-content;
-  margin: 0;
-  padding: 0.2em 1em;
-  background: none;
-  color: #fff;
-  font-size: 1.2em;
-  font-weight: 600;
-  text-align: center;
-  text-shadow: 1px 1px 2px #000a;
-  pointer-events: none;
 }
 /* Texto centralizado para aviso do próximo jogador */
 .aviso-jogador-centro {
@@ -134,22 +135,22 @@
   .placar-futebol {
     position: static;
     margin: 1vw auto 0 auto;
-    width: 90vw;              /* ← REDUZIDO DE 95vw PARA 90vw */
-    max-width: 90vw;          /* ← NUNCA EXCEDE 90% DA TELA */
+    width: 70vw;              /* ← REDUZIDO PARA 70vw */
+    max-width: 70vw;          /* ← NUNCA EXCEDE 70% DA TELA */
     height: auto !important;  /* ← ALTURA AUTOMÁTICA PROPORCIONAL */
-    min-width: 260px;         /* ← REDUZIDO DE 280px PARA 260px */
-    border-radius: 8px;       /* ← REDUZIDO DE 12px PARA 8px */
+    min-width: 200px;         /* ← REDUZIDO PARA 200px */
+    border-radius: 4px;       /* ← REDUZIDO PARA 4px */
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(30,40,50,0.95);
     box-shadow: 0 2px 18px #000a;
     z-index: 10;
-    font-size: 0.75em;        /* ← REDUZIDO DE 0.85em PARA 0.75em */
+    font-size: 0.5em;         /* ← REDUZIDO PARA 0.5em */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
     flex-wrap: nowrap;
-    gap: 0.5vw;              /* ← REDUZIDO DE 1vw PARA 0.5vw */
-    padding: 3px 4px;        /* ← REDUZIDO DE 4px 6px PARA 3px 4px */
+    gap: 0.2vw;              /* ← REDUZIDO DE 0.3vw PARA 0.2vw */
+    padding: 1px 2px;        /* ← REDUZIDO DE 2px 3px PARA 1px 2px */
   }
 
   .controls-container {
@@ -287,18 +288,18 @@
 @media (max-width: 480px) {
   canvas { max-width: 98vw; margin-top: 2.5vw; }
   .placar-futebol { 
-    width: 98vw;              /* ← LARGURA RESPONSIVA */
-    max-width: 98vw;          /* ← NUNCA EXCEDE 98% DA TELA */
+    width: 65vw;              /* ← REDUZIDO PARA 65vw */
+    max-width: 65vw;          /* ← NUNCA EXCEDE 65% DA TELA */
     height: auto !important;  /* ← ALTURA AUTOMÁTICA */
     min-width: unset;         /* ← REMOVE MÍNIMO PARA TELAS MUITO PEQUENAS */
-    padding: 3px 4px;         /* ← PADDING MUITO REDUZIDO */
-    gap: 0.5vw;               /* ← GAP MENOR */
-    font-size: 0.75rem;       /* ← FONTE AINDA MENOR */
+    padding: 1px 1px;         /* ← REDUZIDO AINDA MAIS */
+    gap: 0.1vw;               /* ← REDUZIDO PARA 0.1vw */
+    font-size: 0.45rem;       /* ← REDUZIDO DE 0.6rem PARA 0.45rem */
     margin: 0.5vw auto 0 auto;
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
   }
   .btn-icone { width: 48px; height: 48px; }
-  .vida-bar { width: 30vw; min-width: 50px; max-width: 120px; }
+  .vida-bar { width: 25vw; min-width: 40px; max-width: 100px; height: 12px; }
   .turno-posicionavel, .turno-texto { font-size: 0.95rem; margin-top: 10px; }
   
   /* Ajustar ícones dos soldados para telas pequenas */
@@ -324,22 +325,23 @@
 /* Telas extra pequenas (menos de 350px) */
 @media (max-width: 350px) {
   .placar-futebol {
-    width: 96vw;              /* ← LARGURA AINDA MENOR */
-    max-width: 96vw;          /* ← NUNCA EXCEDE 96% DA TELA */
+    width: 60vw;              /* ← REDUZIDO DRASTICAMENTE PARA 60vw */
+    max-width: 60vw;          /* ← NUNCA EXCEDE 60% DA TELA */
     height: auto !important;  /* ← ALTURA AUTOMÁTICA */
     min-width: unset;         /* ← SEM MÍNIMO PARA TELAS MINÚSCULAS */
-    font-size: 0.55rem;       /* ← FONTE MUITO MENOR */
-    padding: 1px 2px;         /* ← PADDING MUITO MÍNIMO */
-    gap: 0.2vw;               /* ← GAP AINDA MENOR */
+    font-size: 0.4rem;        /* ← REDUZIDO PARA 0.4rem */
+    padding: 1px 1px;         /* ← PADDING MÍNIMO */
+    gap: 0.05vw;              /* ← REDUZIDO PARA 0.05vw */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
-    border-radius: 4px;       /* ← BORDAS MENORES */
+    border-radius: 3px;       /* ← REDUZIDO DE 4px PARA 3px */
     margin: 0.5vw auto;       /* ← MARGEM REDUZIDA */
   }
   
   .vida-bar { 
-    width: 25vw; 
-    min-width: 40px;
-    height: 10px;
+    width: 15vw; 
+    min-width: 25px;
+    max-width: 60px;
+    height: 6px;
   }
   
   .soldado-icone {
