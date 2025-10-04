@@ -113,21 +113,7 @@ function setup() {
     atualizarBarraVida('vida1', vida[0]);
     atualizarBarraVida('vida2', vida[1]);
   }, 100);
-  // Adiciona botão de recomeçar ao lado dos botões de ação
-  if (!document.getElementById('recomecar')) {
-    let btn = document.createElement('button');
-    btn.id = 'recomecar';   
-    btn.title = 'Recomeçar';
-    btn.style = 'width:48px;height:48px;padding:0;background:#ffcc00;color:#222;border:none;border-radius:50%;cursor:pointer;display:none;display:flex;align-items:center;justify-content:center;';
-    btn.onclick = recomecarJogo;
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"><path fill="#222" d="M12 6V3l-5 5 5 5V8c2.76 0 5 2.24 5 5a5 5 0 1 1-5-5z"/></svg>`;
-    let btnContainer = document.querySelector('.button-container');
-    if (btnContainer) {
-      btnContainer.appendChild(btn);
-    } else {
-      document.body.appendChild(btn);
-    }
-  }
+
 }
 
 function draw() {
@@ -242,7 +228,7 @@ function draw() {
         if (vida[adversario] <= 0) {
           aguardandoRecomecar = true;
           setTimeout(() => {
-            document.getElementById('recomecar').style.display = 'inline-block';
+            document.getElementById('recomecar').style.display = 'inline-flex';
           }, 300);
         } else {
           mudarTurno();

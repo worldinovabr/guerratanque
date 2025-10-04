@@ -3,7 +3,74 @@
   position: absolute;
   left: 50%;
   top: 300px; /* Altere este valor para a posição vertical desejada */
-  transform: translateX(-50%);
+  transform: tr/* Refinamentos para celulares muito pequenos */
+@media (max-width: 480px) {
+  canvas { 
+    max-width: 98vw; 
+    margin-top: 2.5vw; 
+  }
+  
+  .placar-futebol { 
+    width: 98vw; 
+    padding: 8px 12px; 
+    font-size: 0.9rem; 
+    gap: 2vw;
+  }
+  
+  .btn-icone { 
+    width: 40px; 
+    height: 40px; 
+  }
+  
+  .vida-bar { 
+    width: 35vw; 
+    min-width: 60px;
+  }
+  
+  .soldado-icone {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .turno-posicionavel, .turno-texto { 
+    font-size: 0.9rem; 
+    margin-top: 8px; 
+  }
+
+  .controls-container {
+    padding: 12px 8px;
+    gap: 10px;
+  }
+
+  .coord-controls {
+    max-width: 280px;
+    gap: 6px;
+  }
+
+  .coord-item {
+    min-width: 60px;
+  }
+
+  .coord-item button {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .coord-item span {
+    font-size: 14px;
+    min-width: 30px;
+  }
+
+  .action-buttons {
+    gap: 12px;
+  }
+
+  .action-buttons button {
+    width: 50px;
+    height: 50px;
+  }
+}-50%);
   z-index: 20;
   width: max-content;
   margin: 0;
@@ -66,21 +133,23 @@
   }
   .placar-futebol {
     position: static;
-    margin: 2vw auto 0 auto;
-    width: 95vw;
-    max-width: 900px;
-    min-width: 320px;
-    border-radius: 16px;
+    margin: 1vw auto 0 auto;
+    width: 90vw;              /* ← REDUZIDO DE 95vw PARA 90vw */
+    max-width: 90vw;          /* ← NUNCA EXCEDE 90% DA TELA */
+    height: auto !important;  /* ← ALTURA AUTOMÁTICA PROPORCIONAL */
+    min-width: 260px;         /* ← REDUZIDO DE 280px PARA 260px */
+    border-radius: 8px;       /* ← REDUZIDO DE 12px PARA 8px */
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(30,40,50,0.95);
     box-shadow: 0 2px 18px #000a;
     z-index: 10;
-    font-size: 1.1em;
+    font-size: 0.75em;        /* ← REDUZIDO DE 0.85em PARA 0.75em */
+    box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
     flex-wrap: nowrap;
-    gap: 2vw;
-    box-sizing: border-box;
+    gap: 0.5vw;              /* ← REDUZIDO DE 1vw PARA 0.5vw */
+    padding: 3px 4px;        /* ← REDUZIDO DE 4px 6px PARA 3px 4px */
   }
 
   .controls-container {
@@ -95,40 +164,63 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2vh;
+    gap: 12px;
     background: rgba(34,34,34,0.95);
     box-shadow: 0 -2px 18px #000a;
-    padding: 2vh 0;
+    padding: 15px 10px;
     z-index: 100;
     box-sizing: border-box;
     transform: none;
   }
 
   .coord-controls {
-    gap: 4vw;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 320px;
   }
 
   .coord-item {
-    gap: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 70px;
   }
 
   .coord-item label {
-    font-size: 10px;
+    font-size: 11px;
+    color: #ffcc00;
+    font-weight: bold;
   }
 
   .coord-item button {
-    width: 28px;
-    height: 28px;
-    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    border: 2px solid #555;
+    background: #333;
+  }
+
+  .coord-item button:hover {
+    background: #444;
   }
 
   .coord-item span {
-    font-size: 14px;
-    min-width: 25px;
+    font-size: 16px;
+    min-width: 35px;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #555;
   }
 
   .action-buttons {
-    gap: 6vw;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
   }
   .placar-futebol {
     left: unset !important;
@@ -168,25 +260,25 @@
     box-sizing: border-box;
   }
   .soldado-icone {
-    width: 9vw !important;
-    height: 9vw !important;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 48px;
-    max-height: 48px;
+    width: 7vw !important;
+    height: 7vw !important;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 36px;
+    max-height: 36px;
     box-sizing: border-box;
   }
   .vida-bar {
-    width: 30vw;
-    min-width: 80px;
-    max-width: 180px;
-    height: 14px;
+    width: 25vw;
+    min-width: 60px;
+    max-width: 120px;
+    height: 12px;
     box-sizing: border-box;
   }
   .placar-futebol .placar-central {
-    font-size: 1.1em !important;
-    min-width: 32px !important;
-    padding: 0 2vw;
+    font-size: 0.9em !important;
+    min-width: 24px !important;
+    padding: 0 1vw;
     box-sizing: border-box;
   }
 }
@@ -194,11 +286,78 @@
 /* Refinamentos para celulares muito pequenos */
 @media (max-width: 480px) {
   canvas { max-width: 98vw; margin-top: 2.5vw; }
-  .placar-futebol { width: 98vw; padding: 10px; gap: 3vw; }
-  .placar-futebol { font-size: 0.95rem; }
+  .placar-futebol { 
+    width: 98vw;              /* ← LARGURA RESPONSIVA */
+    max-width: 98vw;          /* ← NUNCA EXCEDE 98% DA TELA */
+    height: auto !important;  /* ← ALTURA AUTOMÁTICA */
+    min-width: unset;         /* ← REMOVE MÍNIMO PARA TELAS MUITO PEQUENAS */
+    padding: 3px 4px;         /* ← PADDING MUITO REDUZIDO */
+    gap: 0.5vw;               /* ← GAP MENOR */
+    font-size: 0.75rem;       /* ← FONTE AINDA MENOR */
+    margin: 0.5vw auto 0 auto;
+    box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
+  }
   .btn-icone { width: 48px; height: 48px; }
-  .vida-bar { width: 44vw; }
+  .vida-bar { width: 30vw; min-width: 50px; max-width: 120px; }
   .turno-posicionavel, .turno-texto { font-size: 0.95rem; margin-top: 10px; }
+  
+  /* Ajustar ícones dos soldados para telas pequenas */
+  .soldado-icone {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    margin: 0 4px;
+  }
+  
+  /* Ajustar o placar central */
+  .placar-futebol .placar-central {
+    font-size: 0.8em !important;
+    min-width: 20px !important;
+    padding: 0 4px;
+    margin: 0 2px;
+  }
+}
+
+/* Telas extra pequenas (menos de 350px) */
+@media (max-width: 350px) {
+  .placar-futebol {
+    width: 96vw;              /* ← LARGURA AINDA MENOR */
+    max-width: 96vw;          /* ← NUNCA EXCEDE 96% DA TELA */
+    height: auto !important;  /* ← ALTURA AUTOMÁTICA */
+    min-width: unset;         /* ← SEM MÍNIMO PARA TELAS MINÚSCULAS */
+    font-size: 0.55rem;       /* ← FONTE MUITO MENOR */
+    padding: 1px 2px;         /* ← PADDING MUITO MÍNIMO */
+    gap: 0.2vw;               /* ← GAP AINDA MENOR */
+    box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
+    border-radius: 4px;       /* ← BORDAS MENORES */
+    margin: 0.5vw auto;       /* ← MARGEM REDUZIDA */
+  }
+  
+  .vida-bar { 
+    width: 25vw; 
+    min-width: 40px;
+    height: 10px;
+  }
+  
+  .soldado-icone {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    min-height: 16px;
+    max-width: 16px;
+    max-height: 20px;
+    margin: 0 2px;
+  }
+  
+  .placar-futebol .placar-central {
+    font-size: 0.65em !important;
+    min-width: 16px !important;
+    padding: 0 3px;
+    margin: 0 1px;
+  }
 }
 
 /* Ajustes específicos para modo paisagem em celulares */
@@ -541,6 +700,19 @@ button#tras {
 button#tras:hover {
   background-color: #0055cc;
 }
+
+/* Botão de recomeçar */
+button#recomecar {
+  background-color: #ffcc00;
+  color: #222;
+  border: 3px solid #fff2;
+  box-shadow: 0 2px 8px #ffcc0088;
+}
+button#recomecar:hover {
+  background-color: #e6b800;
+  box-shadow: 0 4px 16px #ffcc00cc;
+}
+
 ::placeholder {
   color: #aaa;
 }
@@ -592,6 +764,79 @@ canvas {
   }
   100% {
     box-shadow: 0 0 20px #ffcc00;
+  }
+}
+
+/* Media query específica para celulares em modo paisagem */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+  body {
+    padding-bottom: 18vh;
+  }
+
+  canvas {
+    max-width: 65vw;
+    max-height: 45vh;
+    margin-top: 1vh;
+  }
+
+  .placar-futebol {
+    width: 85vw;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    margin: 1vh auto 0;
+  }
+
+  .controls-container {
+    flex-direction: row;
+    gap: 15px;
+    padding: 8px 10px;
+    height: auto;
+  }
+
+  .coord-controls {
+    flex-direction: row;
+    gap: 8px;
+    max-width: none;
+  }
+
+  .coord-item {
+    min-width: 45px;
+  }
+
+  .coord-item button {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .coord-item span {
+    font-size: 11px;
+    min-width: 25px;
+    padding: 1px 4px;
+  }
+
+  .coord-item label {
+    font-size: 9px;
+  }
+
+  .action-buttons button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .btn-icone {
+    width: 28px;
+    height: 28px;
+  }
+
+  .vida-bar {
+    width: 25vw;
+    height: 12px;
+  }
+
+  .soldado-icone {
+    width: 20px !important;
+    height: 20px !important;
   }
 }
 
