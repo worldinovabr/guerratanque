@@ -411,7 +411,7 @@
   /* Controls container centered above bottom inside canvas area (not full-width) */
   .controls-container {
   position: fixed !important;
-  bottom: 90px !important; /* moved further down so controls sit below the tanks */
+  bottom: 0px !important; /* moved to 0px as requested */
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: auto !important;
@@ -484,7 +484,7 @@
 
   /* Reduce body padding so controls overlay inside canvas area */
   body {
-    padding: 56px 0 160px 0 !important;
+    padding: 56px 0 80px 0 !important;
   }
 
   /* Keep the turno text hidden in landscape to save space */
@@ -906,7 +906,7 @@ canvas {
     gap: 15px;
     padding: 8px 10px;
     height: auto;
-    bottom: 90px; /* move down so controls are below the tanks */
+    bottom: 0px; /* pin to bottom edge */
     /* remove background card in tight landscape */
     background: transparent !important;
     box-shadow: none !important;
