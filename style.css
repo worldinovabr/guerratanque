@@ -135,7 +135,7 @@
   }
   .placar-futebol {
     position: static;
-    margin: 1vw 8vw 0 0;      /* ← MARGEM DIREITA AUMENTADA PARA 8vw PARA PUXAR MAIS À ESQUERDA */
+    margin: 1vw 12vw 0 0;     /* ← MARGEM DIREITA AUMENTADA PARA 12vw PARA PUXAR MAIS À ESQUERDA */
     width: 70vw;              /* ← REDUZIDO PARA 70vw */
     max-width: 70vw;          /* ← NUNCA EXCEDE 70% DA TELA */
     height: auto !important;  /* ← ALTURA AUTOMÁTICA PROPORCIONAL */
@@ -296,7 +296,7 @@
     padding: 1px 1px;         /* ← REDUZIDO AINDA MAIS */
     gap: 0.1vw;               /* ← REDUZIDO PARA 0.1vw */
     font-size: 0.45rem;       /* ← REDUZIDO DE 0.6rem PARA 0.45rem */
-    margin: 0.5vw 20vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 12vw PARA PUXAR MAIS À ESQUERDA */
+    margin: 0.5vw 25vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 25vw PARA PUXAR MAIS À ESQUERDA */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
   }
   .btn-icone { width: 48px; height: 48px; }
@@ -335,7 +335,7 @@
     gap: 0.05vw;              /* ← REDUZIDO PARA 0.05vw */
     box-sizing: border-box;   /* ← GARANTE CÁLCULO CORRETO */
     border-radius: 3px;       /* ← REDUZIDO DE 4px PARA 3px */
-    margin: 0.3vw 20vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 15vw PARA PUXAR MAIS À ESQUERDA */
+    margin: 0.3vw 35vw 0 0;   /* ← MARGEM DIREITA AUMENTADA PARA 35vw PARA PUXAR MAIS À ESQUERDA */
   }
   
   .vida-bar { 
@@ -360,6 +360,68 @@
     min-width: 16px !important;
     padding: 0 3px;
     margin: 0 1px;
+  }
+}
+
+/* Media query específica para telas de 360px */
+@media (max-width: 360px) {
+  .placar-futebol {
+    width: 85vw;
+    max-width: 85vw;
+    font-size: 0.75em;
+    padding: 4px 6px;
+    gap: 1vw;
+    margin: 1vw 40vw 0 auto;
+  }
+  
+  .vida-bar {
+    width: 20vw;
+    min-width: 45px;
+    height: 8px;
+  }
+  
+  .soldado-icone {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .placar-futebol .placar-central {
+    font-size: 0.7em !important;
+    min-width: 14px !important;
+    padding: 0 2px;
+    margin: 0 1px;
+  }
+  
+  .controls-container {
+    padding: 8px 4px;
+    gap: 8px;
+  }
+  
+  .coord-controls {
+    max-width: 240px;
+    gap: 4px;
+  }
+  
+  .coord-item button {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+  
+  .coord-item span {
+    font-size: 12px;
+    min-width: 25px;
+    padding: 2px 4px;
+  }
+  
+  .action-buttons button {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .btn-icone {
+    width: 24px;
+    height: 24px;
   }
 }
 
