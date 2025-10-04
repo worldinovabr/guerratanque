@@ -363,67 +363,7 @@
   }
 }
 
-/* Media query específica para telas de 360px */
-@media (max-width: 360px) {
-  .placar-futebol {
-    width: 85vw;
-    max-width: 85vw;
-    font-size: 0.75em;
-    padding: 4px 6px;
-    gap: 1vw;
-    margin: 1vw 40vw 0 auto;
-  }
-  
-  .vida-bar {
-    width: 20vw;
-    min-width: 45px;
-    height: 8px;
-  }
-  
-  .soldado-icone {
-    width: 18px !important;
-    height: 18px !important;
-  }
-  
-  .placar-futebol .placar-central {
-    font-size: 0.7em !important;
-    min-width: 14px !important;
-    padding: 0 2px;
-    margin: 0 1px;
-  }
-  
-  .controls-container {
-    padding: 8px 4px;
-    gap: 8px;
-  }
-  
-  .coord-controls {
-    max-width: 240px;
-    gap: 4px;
-  }
-  
-  .coord-item button {
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-  }
-  
-  .coord-item span {
-    font-size: 12px;
-    min-width: 25px;
-    padding: 2px 4px;
-  }
-  
-  .action-buttons button {
-    width: 45px;
-    height: 45px;
-  }
-  
-  .btn-icone {
-    width: 24px;
-    height: 24px;
-  }
-}
+
 
 /* Ajustes específicos para modo paisagem em celulares */
 @media (max-width: 900px) and (orientation: landscape) {
@@ -444,11 +384,18 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
   }
 
-  /* Canvas ajustado para não ficar atrás do placar */
+  /* Canvas cobrindo toda a tela em paisagem */
   canvas {
-    margin-top: 56px !important;
-    max-width: 95vw !important;
-    max-height: calc(100vh - 140px) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover;
+    z-index: 0;
   }
 
   /* Controls container centered above bottom inside canvas area (not full-width) */
@@ -458,14 +405,15 @@
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: auto !important;
-    max-width: 92vw !important;
+    max-width: 96vw !important;
     margin: 0 auto !important;
     border-radius: 12px !important;
-    background: rgba(34,34,34,0.86) !important;
+    background: rgba(34,34,34,0.5) !important;
     box-shadow: 0 -6px 18px rgba(0,0,0,0.45) !important;
-    padding: 10px 14px !important;
-    z-index: 1000 !important;
+    padding: 8px 12px !important;
+    z-index: 1001 !important; /* above canvas */
     display: flex !important;
+    flex-direction: row !important; /* force horizontal */
     justify-content: center !important;
     align-items: center !important;
     gap: 12px !important;
@@ -478,6 +426,7 @@
     gap: 10px !important;
     align-items: center !important;
     justify-content: center !important;
+    flex-wrap: nowrap !important; /* keep them on one line */
   }
 
   .coord-item {
@@ -509,6 +458,7 @@
     display: flex !important;
     gap: 12px !important;
     margin-left: 6px !important;
+    flex-direction: row !important; /* ensure buttons laid out horizontally */
   }
 
   .action-buttons button {
@@ -673,6 +623,11 @@
 }
 .vida-bar-inner {
   width: 100%;
+  position: absolute;
+  top: 0;
+  right: 0; /* anchor to the right so reducing width makes it shrink left-to-right */
+  height: 100%;
+  transform-origin: right center;
 }
 /* Barras de vida estilo multiplayer */
 .barras-vida {
@@ -701,12 +656,22 @@
 .vida-bar-inner {
   height: 100%;
   transition: width 0.4s cubic-bezier(.4,2,.6,1);
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform-origin: right center;
 }
 .vida-green .vida-bar-inner {
   background: linear-gradient(90deg, #4caf50 60%, #81c784 100%);
 }
 .vida-red .vida-bar-inner {
   background: linear-gradient(90deg, #e53935 60%, #ff8a80 100%);
+}
+.vida-red .vida-bar-inner {
+  /* Anchor the red inner bar to the left so it shrinks right-to-left */
+  left: 0;
+  right: auto;
+  transform-origin: left center;
 }
 body {
   background-color: #1a1a1a;

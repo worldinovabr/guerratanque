@@ -260,7 +260,8 @@ function alterarValor(id, incremento) {
       novoValor = Math.max(0, Math.min(400, novoValor));
       break;
     case 'potencia':
-      novoValor = Math.max(1, Math.min(20, novoValor));
+      // allow power from 0 up to 100
+      novoValor = Math.max(0, Math.min(100, novoValor));
       break;
   }
   
@@ -274,7 +275,8 @@ function disparar() {
   let y = parseInt(document.getElementById("coordY").textContent);
   let potencia = parseInt(document.getElementById("potencia").textContent);
 
-  if (isNaN(x) || isNaN(y) || isNaN(potencia) || potencia <= 0) return;
+  // allow potencia == 0 (zero-speed shot), only reject negative or NaN
+  if (isNaN(x) || isNaN(y) || isNaN(potencia) || potencia < 0) return;
 
   let origem = turno === 1 ? tanque1 : tanque2;
   let dx = x - origem.x;
