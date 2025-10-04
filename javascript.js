@@ -37,6 +37,30 @@ window.addEventListener('DOMContentLoaded', function() {
       if (howlerSomTiro) howlerSomTiro.play();
     });
   }
+  // Register service worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('SW registration failed:', err));
+  }
+});
+
+// PWA install flow: show install prompt as soon as browser allows it
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent the mini-infobar from appearing on mobile
+  e.preventDefault();
+  deferredPrompt = e;
+  // Try to prompt immediately
+  setTimeout(async () => {
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      // Optional: log the outcome
+      console.log('User response to install prompt:', outcome);
+      deferredPrompt = null;
+    } catch (err) {
+      console.warn('Install prompt failed:', err);
+    }
+  }, 700); // give the page a short moment to finish loading UI
 });
 
 // Toca som de explosão quando inicia a animação
