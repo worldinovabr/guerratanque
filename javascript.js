@@ -3,6 +3,7 @@ let howlerSomTiro;
 
   
 let tanque1Img, tanque2Img, fundoImg, explosionSprite, tanque1QuebradoImg, tanque2QuebradoImg;
+let bombaImg; // image for plane bombs (assets/bomba.png)
 let tanque1, tanque2;
 let projeteis = [];
 let turno = 1;
@@ -22,6 +23,7 @@ let somExplosao;
 let howlerExplosao;
 let howlerFundoMusical;
 let vida = [100, 100];
+let p5Ready = false; // becomes true after setup() completes
 
 // Inicializa o som da explosão, música de fundo e som do tiro com Howler.js após o carregamento da página
 window.addEventListener('DOMContentLoaded', function() {
@@ -85,17 +87,17 @@ function preload() {
   }
 
   tanque1Img = loadImage(
-    "https://copilot.microsoft.com/th/id/BCO.89c0ed36-720f-4a45-bb9c-f67edba35271.png",
+    "tanque1.png",
     undefined,
     () => { tanque1Img = placeholder(90, 90, "Tanque 1"); }
   );
   tanque2Img = loadImage(
-    "https://copilot.microsoft.com/th/id/BCO.92972bda-fb88-40b5-9980-d44ba5513799.png",
+    "tanque2.png",
     undefined,
     () => { tanque2Img = placeholder(90, 90, "Tanque 2"); }
   );
   fundoImg = loadImage(
-    "https://copilot.microsoft.com/th/id/BCO.93c0dbca-ed97-4d29-9c48-8b36745bf773.png",
+    "fundo.png",
     undefined,
     () => {
       let gfx = createGraphics(800, 400);
@@ -112,17 +114,22 @@ function preload() {
     }
   );
   explosionSprite = loadImage(
-    "https://img.icons8.com/external-flaticons-flat-flat-icons/128/external-explosion-nuclear-disaster-flaticons-flat-flat-icons.png",
+    "explosion_sprite.png",
     undefined,
     () => { explosionSprite = placeholder(128, 128, "EXPLOSÃO"); }
   );
+  bombaImg = loadImage(
+    'assets/bomba.png',
+    undefined,
+    () => { bombaImg = placeholder(24, 24, 'BOMBA'); }
+  );
   tanque1QuebradoImg = loadImage(
-    "https://copilot.microsoft.com/th/id/BCO.f7cc0ccd-dfb7-4b3e-9770-49f25bdd766a.png",
+    "tanquequebrado1.png",
     undefined,
     () => { tanque1QuebradoImg = placeholder(90, 90, "Quebrado1"); }
   );
   tanque2QuebradoImg = loadImage(
-    "https://copilot.microsoft.com/th/id/BCO.5e4811e1-4e4b-4b12-95fb-380e9374aa75.png",
+    "tanquequebrado2.png",
     undefined,
     () => { tanque2QuebradoImg = placeholder(90, 90, "Quebrado2"); }
   );
@@ -137,6 +144,7 @@ function setup() {
     atualizarBarraVida('vida1', vida[0]);
     atualizarBarraVida('vida2', vida[1]);
   }, 100);
+  p5Ready = true;
 
 }
 
@@ -195,75 +203,110 @@ function draw() {
       p.y += p.vy;
       p.vy += p.gravidade;
 
-  // Desenha um míssil estilizado
-  push();
-  translate(p.x, p.y);
-  let ang = atan2(p.vy, p.vx);
-  rotate(ang);
-  // Corpo do míssil
-  fill(200);
-  stroke(80);
-  strokeWeight(1);
-  rect(-8, -3, 16, 6, 3);
-  // Ponta vermelha
-  fill(220, 0, 0);
-  noStroke();
-  ellipse(8, 0, 7, 7);
-  // Cauda de fogo animada
-  let fireLen = 6 + random(2, 6);
-  fill(255, 180, 0, 180);
-  ellipse(-10, 0, fireLen, 6);
-  fill(255, 80, 0, 120);
-  ellipse(-13, 0, fireLen * 0.7, 4);
-  pop();
+  // Desenha um míssil estilizado (ou bomba do avião)
+  if (p && p.owner === 0) {
+    // bomba: desenhe imagem quando disponível, senão use fallback óbvio
+    if (typeof bombaImg !== 'undefined' && bombaImg) {
+      // draw centered bomb image (approx 24x24)
+      const bw = 24;
+      const bh = 24;
+      image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
+    } else {
+      push();
+      noStroke();
+      fill(200, 30, 30);
+      ellipse(p.x, p.y, 18, 18);
+      // pingo de sombra
+      fill(120, 20, 20, 160);
+      ellipse(p.x, p.y + 4, 10, 6);
+      pop();
+    }
+  } else {
+    push();
+    translate(p.x, p.y);
+    let ang = atan2(p.vy, p.vx);
+    rotate(ang);
+    // Corpo do míssil
+    fill(200);
+    stroke(80);
+    strokeWeight(1);
+    rect(-8, -3, 16, 6, 3);
+    // Ponta vermelha
+    fill(220, 0, 0);
+    noStroke();
+    ellipse(8, 0, 7, 7);
+    // Cauda de fogo animada
+    let fireLen = 6 + random(2, 6);
+    fill(255, 180, 0, 180);
+    ellipse(-10, 0, fireLen, 6);
+    fill(255, 80, 0, 120);
+    ellipse(-13, 0, fireLen * 0.7, 4);
+    pop();
+  }
 
-      let inimigo = turno === 1 ? tanque2 : tanque1;
-      let hitbox = {
-        x: inimigo.x - inimigo.w / 2,
-        y: inimigo.y - inimigo.h / 2,
-        w: inimigo.w,
-        h: inimigo.h
+      // Determine if projectile hits either tank (bombs can hit any; player shot targets enemy only)
+      const tankHit = (tankObj) => {
+        const hb = { x: tankObj.x - tankObj.w/2, y: tankObj.y - tankObj.h/2, w: tankObj.w, h: tankObj.h };
+        return p.x > hb.x && p.x < hb.x + hb.w && p.y > hb.y && p.y < hb.y + hb.h;
       };
-
-      // Verifica colisão com o tanque
-      if (
-        p.x > hitbox.x &&
-        p.x < hitbox.x + hitbox.w &&
-        p.y > hitbox.y &&
-        p.y < hitbox.y + hitbox.h
-      ) {
-        placar[turno - 1]++;
-        document.getElementById("p1score").textContent = placar[0];
-        document.getElementById("p2score").textContent = placar[1];
-        let adversario = turno === 1 ? 1 : 0;
-        vida[adversario] = Math.max(0, vida[adversario] - 10);
-  setTimeout(() => atualizarBarraVida(adversario === 0 ? 'vida1' : 'vida2', vida[adversario]), 50);
-        explosao = { x: inimigo.x, y: inimigo.y, size: 120 };
-        explosaoTimer = 40;
-        projeteis.splice(i, 1);
-        // Mostra o tanque destruído temporariamente
-        if (adversario === 0 && vida[adversario] > 0) {
-          tanque1QuebradoTemp = true;
-          setTimeout(() => { tanque1QuebradoTemp = false; }, 1000);
-        } else if (adversario === 1 && vida[adversario] > 0) {
-          tanque2QuebradoTemp = true;
-          setTimeout(() => { tanque2QuebradoTemp = false; }, 1000);
+      const hitTank1 = tankHit(tanque1);
+      const hitTank2 = tankHit(tanque2);
+      if (p.owner === 0) {
+        // Bomb from plane: damage whichever tank it hits (only one in practice)
+        let damagedIdx = -1;
+        if (hitTank1) damagedIdx = 0; else if (hitTank2) damagedIdx = 1;
+        if (damagedIdx !== -1) {
+          vida[damagedIdx] = Math.max(0, vida[damagedIdx] - 10);
+          setTimeout(() => atualizarBarraVida(damagedIdx === 0 ? 'vida1' : 'vida2', vida[damagedIdx]), 50);
+          explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 };
+          explosaoTimer = 40;
+          projeteis.splice(i, 1);
+          if (damagedIdx === 0 && vida[damagedIdx] > 0) {
+            tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000);
+          } else if (damagedIdx === 1 && vida[damagedIdx] > 0) {
+            tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000);
+          }
+          if (vida[damagedIdx] <= 0) {
+            aguardandoRecomecar = true;
+            setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
+          }
+          // Bombs do not affect score or turn.
+          break;
         }
-        if (vida[adversario] <= 0) {
-          aguardandoRecomecar = true;
-          setTimeout(() => {
-            document.getElementById('recomecar').style.display = 'inline-flex';
-          }, 300);
-        } else {
-          mudarTurno();
+      } else {
+        // Player projectile: can only score by hitting the opponent's tank
+        const adversarioIdx = (turno === 1 ? 1 : 0);
+        const adversarioTank = adversarioIdx === 0 ? tanque1 : tanque2;
+        if (tankHit(adversarioTank)) {
+          // award score to projectile owner (validate owner in [1,2])
+            if (p.owner === 1 || p.owner === 2) {
+              placar[p.owner - 1]++;
+              document.getElementById('p1score').textContent = placar[0];
+              document.getElementById('p2score').textContent = placar[1];
+            }
+          vida[adversarioIdx] = Math.max(0, vida[adversarioIdx] - 10);
+          setTimeout(() => atualizarBarraVida(adversarioIdx === 0 ? 'vida1' : 'vida2', vida[adversarioIdx]), 50);
+          explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 };
+          explosaoTimer = 40;
+          projeteis.splice(i, 1);
+          if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
+          else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
+          if (vida[adversarioIdx] <= 0) {
+            aguardandoRecomecar = true;
+            setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
+          } else {
+            mudarTurno();
+          }
+          break;
         }
-        break;
       }
 
       // Remove projétil se sair da tela
       if (p.x < 0 || p.x > width || p.y > height) {
+        // remove projectile; only change turn for player shots
+        const wasPlayerShot = (p.owner === 1 || p.owner === 2);
         projeteis.splice(i, 1);
-        mudarTurno();
+        if (wasPlayerShot) mudarTurno();
       }
     }
   }
@@ -307,14 +350,15 @@ function disparar() {
   let dy = y - origem.y;
   let angulo = atan2(dy, dx);
 
-  const fatorVelocidade = 0.5; // Reduz a velocidade do tiro
-  projeteis.push({
-    x: origem.x,
-    y: origem.y,
-    vx: cos(angulo) * potencia * fatorVelocidade,
-    vy: sin(angulo) * potencia * fatorVelocidade,
-    gravidade: 0.2
-  });
+    const fatorVelocidade = 0.5; // Reduz a velocidade do tiro
+    projeteis.push({
+      x: origem.x,
+      y: origem.y,
+      vx: cos(angulo) * potencia * fatorVelocidade,
+      vy: sin(angulo) * potencia * fatorVelocidade,
+      gravidade: 0.2,
+      owner: turno // who fired this projectile (1 or 2)
+    });
 }
 
 function moverTanque(direcao) {
@@ -363,6 +407,7 @@ if (typeof atualizarBarraVida !== 'function') {
 
 // Plane spawner: aviao.png flies left->right, aviao1.png flies right->left
 ;(function () {
+  console.log('plane manager IIFE initializing');
   const IMG_LR = 'assets/aviao.png';   // left -> right
   const IMG_RL = 'assets/aviao1.png';  // right -> left
   const BUFFER = 140;
@@ -410,6 +455,7 @@ if (typeof atualizarBarraVida !== 'function') {
       el.style.transform = 'translateY(-50%) scaleX(-1)';
     }
     document.body.appendChild(el);
+    console.log('createPlane dir=', dir, 'startX=', el._x, 'top=', topY, 'width=', el.style.width);
     return el;
   }
 
@@ -433,13 +479,77 @@ if (typeof atualizarBarraVida !== 'function') {
 
   let last = null;
   function frame(ts) {
-    if (!last) last = ts;
+    if (!last) {
+      last = ts;
+      console.log('plane frame loop started at', ts);
+    }
     const dt = (ts - last) / 1000;
     last = ts;
 
     if (active) {
       active._x += active._dir * active._speed * dt;
       active.style.left = active._x + 'px';
+
+      // Plane drop logic: occasionally drop a bomb aiming to the area between tanks
+      try {
+  if (p5Ready && !active._nextDrop) active._nextDrop = ts + 2000; // start drops after 2s once p5 is ready
+  if (p5Ready && ts >= active._nextDrop) {
+          const canvas = document.querySelector('canvas');
+          const pr = active.getBoundingClientRect ? active.getBoundingClientRect() : { left: active._x, top: planeTopY, width: parseFloat(active.style.width) || 48, height: 24 };
+          // ensure p5 canvas and width/height are ready to avoid NaN coordinates
+          if (!canvas) {
+            console.log('plane drop skipped: canvas not found yet');
+            active._nextDrop = ts + 500; // try again shortly
+          } else {
+            const cr = canvas.getBoundingClientRect();
+            if (typeof width !== 'number' || typeof height !== 'number' || cr.width === 0 || cr.height === 0) {
+              console.log('plane drop skipped: canvas/size not ready', 'width', width, 'height', height, 'cr', cr.width, cr.height);
+              active._nextDrop = ts + 500;
+            } else {
+              const originX = ((pr.left - cr.left) / cr.width) * width + (pr.width / cr.width) * width / 2;
+              const originY = ((pr.top - cr.top) / cr.height) * height + (pr.height / cr.height) * height / 2;
+              // Linha do solo (aprox da base dos tanques). Usamos y dos tanques (estão centrados).
+              const groundY = tanque1.y; // ambos tanques compartilham a mesma linha y
+              const dyGround = groundY - originY;
+              // target a random x between tanks with some margin
+              const tanksMinX = Math.min(tanque1.x, tanque2.x) - 40;
+              const tanksMaxX = Math.max(tanque1.x, tanque2.x) + 40;
+              const targetX = tanksMinX + Math.random() * (tanksMaxX - tanksMinX);
+              // Física: y(t) = originY + vy*t + 0.5*g*t^2. Queremos y(t_landing) ~= groundY.
+              // Escolhemos g e vy inicial e resolvemos t. Para simplificar, vy inicial pequeno para queda quase vertical.
+              const grav = 0.35; // mesma gravidade que já usávamos
+              const initialVy = 1.0 + Math.random()*0.8; // leve velocidade inicial para baixo
+              // 0.5*g*t^2 + initialVy*t - dyGround = 0  (with dyGround = groundY-originY)
+              // a = 0.5*g, b = initialVy, c = -dyGround
+              const a = 0.5 * grav;
+              const b = initialVy;
+              const c = -dyGround;
+              let tLand = 0;
+              const disc = b*b - 4*a*c;
+              if (disc >= 0) {
+                const sqrtD = Math.sqrt(disc);
+                const t1 = (-b + sqrtD) / (2*a);
+                const t2 = (-b - sqrtD) / (2*a);
+                // escolhe a raiz positiva maior (tempo futuro)
+                tLand = Math.max(t1, t2);
+              }
+              if (!tLand || !isFinite(tLand) || tLand < 0.3) {
+                // fallback: estimativa simples se algo deu errado
+                tLand = Math.sqrt((2 * dyGround) / grav);
+              }
+              // vx necessário para alcançar targetX em tLand
+              const dx = targetX - originX;
+              const vx = dx / tLand;
+              console.log('plane drop ->', 'from', Math.round(originX), Math.round(originY), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
+              projeteis.push({ x: originX, y: originY, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
+              // schedule next drop in 2 seconds (2000 ms)
+              active._nextDrop = ts + 2000;
+            }
+          }
+        }
+      } catch (err) {
+        // ignore drop errors
+      }
 
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
         // remove and spawn opposite

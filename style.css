@@ -614,6 +614,15 @@
   width: 32px;
   height: 32px;
 }
+/* Debug style for airplane DOM elements to ensure visibility while diagnosing bombs */
+.aviao-fly {
+  pointer-events: none;
+  z-index: 1002 !important;
+  display: block;
+  /* outline helps show the DOM image bounds during debugging; remove later */
+  outline: 1px dashed rgba(255,255,255,0.12);
+  transform-origin: center center;
+}
 .vida-placar {
   display: flex;
   align-items: center;
