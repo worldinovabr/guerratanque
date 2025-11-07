@@ -204,6 +204,38 @@ function draw() {
       p.y += p.vy;
       p.vy += p.gravidade;
 
+      // Player projectiles can hit the plane
+      if (p && (p.owner === 1 || p.owner === 2)) {
+        try {
+          const planeEl = document.querySelector('.aviao-fly');
+          const canvas = document.querySelector('canvas');
+          if (planeEl && canvas) {
+            const pr = planeEl.getBoundingClientRect();
+            const cr = canvas.getBoundingClientRect();
+            const planeX = ((pr.left - cr.left) / cr.width) * width;
+            const planeY = ((pr.top - cr.top) / cr.height) * height;
+            const planeW = (pr.width / cr.width) * width;
+            const planeH = (pr.height / cr.height) * height;
+            if (p.x > planeX && p.x < planeX + planeW && p.y > planeY && p.y < planeY + planeH) {
+              // award score to shooter
+              if (p.owner === 1 || p.owner === 2) {
+                placar[p.owner - 1]++;
+                document.getElementById('p1score').textContent = placar[0];
+                document.getElementById('p2score').textContent = placar[1];
+              }
+              explosao = { x: planeX + planeW / 2, y: planeY + planeH / 2, size: 120 };
+              explosaoTimer = 40;
+              projeteis.splice(i, 1);
+              // notify plane manager to respawn
+              document.dispatchEvent(new CustomEvent('planeHit'));
+              break;
+            }
+          }
+        } catch (err) {
+          // ignore plane-hit detection errors
+        }
+      }
+
   // Desenha um míssil estilizado (ou bomba do avião)
   if (p && p.owner === 0) {
     // bomba: desenhe imagem quando disponível, senão use fallback óbvio
@@ -465,6 +497,21 @@ if (typeof atualizarBarraVida !== 'function') {
 
   let currentDir = 1;
   let active = createPlane(currentDir);
+
+  // When a plane is hit, respawn a fresh plane in the same direction
+  document.addEventListener('planeHit', () => {
+    try {
+      if (active) {
+        const dir = active._dir || currentDir;
+        active.remove();
+        // keep same direction so it restarts from its start side
+        active = createPlane(dir);
+        currentDir = dir;
+      }
+    } catch (e) {
+      console.warn('planeHit handler error', e);
+    }
+  });
 
   window.addEventListener('resize', () => {
     // recompute shared top and update for all planes
