@@ -137,8 +137,8 @@ function preload() {
 
 function setup() {
   createCanvas(800, 400);
-  tanque1 = { x: 100, y: 300, w: 90, h: 90 };
-  tanque2 = { x: 700, y: 300, w: 90, h: 90 };
+  tanque1 = { x: 200, y: 315, w: 90, h: 120 };
+  tanque2 = { x: 700, y: 315, w: 110, h: 120 };
   vida = [100, 100];
   setTimeout(() => {
     atualizarBarraVida('vida1', vida[0]);
