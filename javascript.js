@@ -24,6 +24,7 @@ let howlerExplosao;
 let howlerFundoMusical;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
+const PLANE_SPEED_FACTOR = 0.65; // 1.0 = normal speed, <1 slower
 
 // Inicializa o som da explosão, música de fundo e som do tiro com Howler.js após o carregamento da página
 window.addEventListener('DOMContentLoaded', function() {
@@ -208,8 +209,8 @@ function draw() {
     // bomba: desenhe imagem quando disponível, senão use fallback óbvio
     if (typeof bombaImg !== 'undefined' && bombaImg) {
       // draw centered bomb image (approx 24x24)
-      const bw = 24;
-      const bh = 24;
+      const bw = 35;
+      const bh = 40;
       image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
     } else {
       push();
@@ -440,7 +441,7 @@ if (typeof atualizarBarraVida !== 'function') {
     el.style.pointerEvents = 'none';
     // Initialize X based on direction
     el._dir = dir;
-    el._speed = 180 + Math.min(220, window.innerWidth / 3);
+  el._speed = (180 + Math.min(220, window.innerWidth / 3)) * PLANE_SPEED_FACTOR;
     // Size adjustments: default width, smaller for dir === -1
     if (dir === 1) {
       el._x = -BUFFER;
@@ -470,7 +471,7 @@ if (typeof atualizarBarraVida !== 'function') {
     planeTopY = computeTop();
     document.querySelectorAll('.aviao-fly').forEach(p => {
       p.style.top = planeTopY + 'px';
-      p._speed = 180 + Math.min(220, window.innerWidth / 3);
+        p._speed = (180 + Math.min(220, window.innerWidth / 3)) * PLANE_SPEED_FACTOR;
   // adjust sizes responsively (slightly smaller)
   if (p._dir === 1) p.style.width = '64px';
   else p.style.width = '48px';
@@ -517,11 +518,11 @@ if (typeof atualizarBarraVida !== 'function') {
               const targetX = tanksMinX + Math.random() * (tanksMaxX - tanksMinX);
               // Física: y(t) = originY + vy*t + 0.5*g*t^2. Queremos y(t_landing) ~= groundY.
               // Escolhemos g e vy inicial e resolvemos t. Para simplificar, vy inicial pequeno para queda quase vertical.
-              const grav = 0.35; // mesma gravidade que já usávamos
+              const grav = 0.15; // mesma gravidade que já usávamos
               const initialVy = 1.0 + Math.random()*0.8; // leve velocidade inicial para baixo
               // 0.5*g*t^2 + initialVy*t - dyGround = 0  (with dyGround = groundY-originY)
               // a = 0.5*g, b = initialVy, c = -dyGround
-              const a = 0.5 * grav;
+              const a = 0.2 * grav;
               const b = initialVy;
               const c = -dyGround;
               let tLand = 0;
