@@ -22,9 +22,11 @@ let explosionSpriteH = 128;
 let somExplosao;
 let howlerExplosao;
 let howlerFundoMusical;
+let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
 const PLANE_SPEED_FACTOR = 0.65; // 1.0 = normal speed, <1 slower
+let fallenPlanes = []; // fragments for broken planes that fall with gravity
 
 // Inicializa o som da explosão, música de fundo e som do tiro com Howler.js após o carregamento da página
 window.addEventListener('DOMContentLoaded', function() {
@@ -124,6 +126,16 @@ function preload() {
     undefined,
     () => { bombaImg = placeholder(24, 24, 'BOMBA'); }
   );
+  aviaoQuebrado1Img = loadImage(
+    'aviaoquebrado1.png',
+    undefined,
+    () => { aviaoQuebrado1Img = placeholder(120, 60, 'AQ1'); }
+  );
+  aviaoQuebrado2Img = loadImage(
+    'aviaoquebrado2.png',
+    undefined,
+    () => { aviaoQuebrado2Img = placeholder(120, 60, 'AQ2'); }
+  );
   tanque1QuebradoImg = loadImage(
     "tanquequebrado1.png",
     undefined,
@@ -178,21 +190,80 @@ function draw() {
     image(tanque2Img, tanque2.x - tanque2.w / 2, tanque2.y - tanque2.h / 2, tanque2.w, tanque2.h);
   }
 
-  // Explosão animada
-  if (explosao && explosaoTimer > 0) {
-    let frame = Math.floor(explosionFrame);
-    let sx = (frame % explosionMaxFrames) * explosionSpriteW;
-    let sy = 0;
-    image(
-      explosionSprite,
-      sx, sy, explosionSpriteW, explosionSpriteH,
-      explosao.x - explosao.size / 2, explosao.y - explosao.size / 2, explosao.size, explosao.size
-    );
-    explosionFrame += 0.7;
-    explosaoTimer--;
-    if (explosionFrame >= explosionMaxFrames) explosionFrame = 0;
-    if (explosaoTimer === 0) {
-      explosao = null;
+  // Explosão: suporta animação por sprite (tanques/bombas) e modo estático com fade (acerto de avião)
+  if (explosao) {
+    if (explosao.fade) {
+      // Static frame + fade out using tint alpha
+      push();
+      // alpha is 0..255
+      if (explosao.fallback || !explosionSprite) {
+        // fallback: draw a quick visible circle where the explosion should be
+        noStroke();
+        fill(255, 200, 0, explosao.alpha);
+        ellipse(explosao.x, explosao.y, explosao.size, explosao.size);
+      } else {
+        tint(255, explosao.alpha);
+        // draw first frame of the sprite sheet as a static explosion
+        image(
+          explosionSprite,
+          0, 0, explosionSpriteW, explosionSpriteH,
+          explosao.x - explosao.size / 2, explosao.y - explosao.size / 2, explosao.size, explosao.size
+        );
+        noTint();
+      }
+      pop();
+      // decrease alpha until it disappears
+      explosao.alpha -= (explosao.fadeStep || 6);
+      if (explosao.alpha <= 0) {
+        explosao = null;
+      }
+    } else if (explosaoTimer > 0) {
+      // existing animated sprite behaviour (kept for tank/bomb explosions)
+      let frame = Math.floor(explosionFrame);
+      let sx = (frame % explosionMaxFrames) * explosionSpriteW;
+      let sy = 0;
+      image(
+        explosionSprite,
+        sx, sy, explosionSpriteW, explosionSpriteH,
+        explosao.x - explosao.size / 2, explosao.y - explosao.size / 2, explosao.size, explosao.size
+      );
+      explosionFrame += 0.7;
+      explosaoTimer--;
+      if (explosionFrame >= explosionMaxFrames) explosionFrame = 0;
+      if (explosaoTimer === 0) {
+        explosao = null;
+      }
+    }
+  }
+
+  // Fallen broken planes: update physics and draw them (they fall with gravity until removed)
+  if (fallenPlanes.length > 0) {
+    for (let k = fallenPlanes.length - 1; k >= 0; k--) {
+      const fp = fallenPlanes[k];
+      // physics
+      fp.x += fp.vx;
+      fp.y += fp.vy;
+      fp.vy += fp.grav;
+      fp.rot += fp.rotV;
+      // fade out when below screen or after timeout
+      if (fp.y > height + fp.size || (fp.lifetime !== undefined && fp.lifetime-- <= 0)) {
+        fallenPlanes.splice(k, 1);
+        continue;
+      }
+      push();
+      translate(fp.x, fp.y);
+      rotate(fp.rot);
+      tint(255, fp.alpha || 255);
+      if (fp.img) {
+        image(fp.img, -fp.size/2, -fp.size/2, fp.size, fp.size);
+      } else {
+        // fallback visual
+        noStroke();
+        fill(180, 80, 20, 220);
+        ellipse(0, 0, fp.size, fp.size);
+      }
+      noTint();
+      pop();
     }
   }
 
@@ -223,11 +294,33 @@ function draw() {
                 document.getElementById('p1score').textContent = placar[0];
                 document.getElementById('p2score').textContent = placar[1];
               }
-              explosao = { x: planeX + planeW / 2, y: planeY + planeH / 2, size: 120 };
-              explosaoTimer = 40;
+              // create a falling broken-plane fragment at the visual center of the plane
+              const planeCenterScreenX = pr.left + pr.width / 2;
+              const planeCenterScreenY = pr.top + pr.height / 2;
+              const planeCenterCanvasX = ((planeCenterScreenX - cr.left) / cr.width) * width;
+              const planeCenterCanvasY = ((planeCenterScreenY - cr.top) / cr.height) * height;
+              const planeWCanvas = (pr.width / cr.width) * width;
+              const planeHCanvas = (pr.height / cr.height) * height;
+              const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
+              // choose broken image depending on plane direction (dir === 1 -> quebrado1 else quebrado2)
+              const brokenImg = (planeEl._dir === 1 ? aviaoQuebrado1Img : aviaoQuebrado2Img) || null;
+              // initial fragment physics
+              const frag = {
+                x: planeCenterCanvasX,
+                y: planeCenterCanvasY,
+                size: sizeForPlane,
+                vx: (planeEl._dir || 1) * (1 + Math.random() * 2),
+                vy: 1 + Math.random() * 2,
+                grav: 0.18,
+                rot: 0,
+                rotV: (Math.random() - 0.5) * 0.08,
+                img: brokenImg,
+                alpha: 255
+              };
+              fallenPlanes.push(frag);
               projeteis.splice(i, 1);
-              // notify plane manager to respawn
-              document.dispatchEvent(new CustomEvent('planeHit'));
+              // tell plane manager to respawn after a short delay so the fallen fragment is visible
+              document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
               break;
             }
           }
@@ -498,15 +591,23 @@ if (typeof atualizarBarraVida !== 'function') {
   let currentDir = 1;
   let active = createPlane(currentDir);
 
-  // When a plane is hit, respawn a fresh plane in the same direction
-  document.addEventListener('planeHit', () => {
+  // When a plane is hit, respawn a fresh plane in the same direction.
+  // If the event supplies a delayRespawn (ms) we'll wait that long before creating the new plane
+  document.addEventListener('planeHit', (ev) => {
     try {
       if (active) {
         const dir = active._dir || currentDir;
         active.remove();
-        // keep same direction so it restarts from its start side
-        active = createPlane(dir);
-        currentDir = dir;
+        const delay = ev && ev.detail && typeof ev.detail.delayRespawn === 'number' ? ev.detail.delayRespawn : 0;
+        if (delay > 0) {
+          setTimeout(() => {
+            active = createPlane(dir);
+            currentDir = dir;
+          }, delay);
+        } else {
+          active = createPlane(dir);
+          currentDir = dir;
+        }
       }
     } catch (e) {
       console.warn('planeHit handler error', e);
