@@ -554,6 +554,23 @@ if (typeof atualizarBarraVida !== 'function') {
     }
   }
 
+  // Compute a randomized top position for the plane each loop
+  function computeRandomTop() {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return computeTop();
+    const r = canvas.getBoundingClientRect();
+    try {
+      const isMobileLandscape = window.matchMedia && window.matchMedia('(max-width: 900px) and (orientation: landscape)').matches;
+      const baseFraction = isMobileLandscape ? 0.42 : 0.28;
+      const baseTop = r.top + Math.max(30, r.height * baseFraction);
+      // jitter up to ±10% of canvas height so each loop varies altitude
+      const jitter = (Math.random() - 0.5) * r.height * 0.2;
+      return baseTop + jitter;
+    } catch (e) {
+      return computeTop();
+    }
+  }
+
   function createPlane(dir) {
     const el = document.createElement('img');
     el.className = 'aviao-fly';
@@ -701,13 +718,16 @@ if (typeof atualizarBarraVida !== 'function') {
       }
 
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
-        // remove and spawn opposite
+        // remove and spawn opposite; randomize altitude for the next loop
         active.remove();
         currentDir = -1;
+        planeTopY = computeRandomTop();
         active = createPlane(currentDir);
       } else if (active._dir === -1 && active._x <= -BUFFER) {
+        // remove and spawn opposite; randomize altitude for the next loop
         active.remove();
         currentDir = 1;
+        planeTopY = computeRandomTop();
         active = createPlane(currentDir);
       }
     }
