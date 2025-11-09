@@ -30,6 +30,76 @@ const PLANE_SPEED_FACTOR = 1.3; // 1.0 = normal speed, <1 slower
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
+// Sistema de fumaça realista
+let smokeParticles = [];
+class SmokeParticle {
+  constructor(x, y, intensity = 1) {
+    this.x = x;
+    this.y = y;
+    this.vx = random(-0.5, 0.5) * intensity;
+    this.vy = random(-1, -2) * intensity; // sobe
+    this.size = random(20, 40) * intensity;
+    this.maxSize = this.size + random(30, 60);
+    this.alpha = random(100, 180);
+    this.life = 255;
+    this.color = random(40, 80); // tons de cinza escuro
+    this.rotation = random(TWO_PI);
+    this.rotationSpeed = random(-0.02, 0.02);
+  }
+  
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx += random(-0.1, 0.1); // movimento orgânico
+    this.vy *= 0.98; // desacelera
+    this.size = lerp(this.size, this.maxSize, 0.02);
+    this.life -= random(1, 3);
+    this.alpha = map(this.life, 0, 255, 0, 180);
+    this.rotation += this.rotationSpeed;
+  }
+  
+  display() {
+    push();
+    translate(this.x, this.y);
+    rotate(this.rotation);
+    noStroke();
+    // Múltiplas camadas para profundidade
+    fill(this.color, this.alpha * 0.6);
+    ellipse(0, 0, this.size * 1.2, this.size);
+    fill(this.color + 20, this.alpha * 0.8);
+    ellipse(0, 0, this.size * 0.8, this.size * 0.7);
+    fill(this.color + 40, this.alpha);
+    ellipse(0, 0, this.size * 0.5, this.size * 0.5);
+    pop();
+  }
+  
+  isDead() {
+    return this.life <= 0;
+  }
+}
+
+function addSmoke(x, y, count = 1, intensity = 1) {
+  for (let i = 0; i < count; i++) {
+    smokeParticles.push(new SmokeParticle(x + random(-10, 10), y + random(-5, 5), intensity));
+  }
+}
+
+function updateSmoke() {
+  // Atualiza e remove partículas mortas
+  for (let i = smokeParticles.length - 1; i >= 0; i--) {
+    smokeParticles[i].update();
+    if (smokeParticles[i].isDead()) {
+      smokeParticles.splice(i, 1);
+    }
+  }
+}
+
+function displaySmoke() {
+  for (let particle of smokeParticles) {
+    particle.display();
+  }
+}
+
 // --- Plane HUD: show plane HP to the player ---
 function updatePlaneHUD(planeEl) {
   try {
@@ -192,6 +262,9 @@ function draw() {
   tocarSomExplosaoSeNecessario();
   background(30);
   image(fundoImg, 0, 0, width, height);
+  
+  // Atualiza partículas de fumaça
+  updateSmoke();
 
   // Tanque 1 invertido horizontalmente
   push();
@@ -277,6 +350,12 @@ function draw() {
       fp.y += fp.vy;
       fp.vy += fp.grav;
       fp.rot += fp.rotV;
+      
+      // Gera fumaça do avião caindo
+      if (frameCount % 3 === 0) {
+        addSmoke(fp.x, fp.y, 2, 1.2);
+      }
+      
       // fade out when below screen or after timeout
       if (fp.y > height + fp.size || (fp.lifetime !== undefined && fp.lifetime-- <= 0)) {
         fallenPlanes.splice(k, 1);
@@ -336,11 +415,10 @@ function draw() {
             }
             if (p.x > hitboxX && p.x < hitboxX + hitboxW && p.y > hitboxY && p.y < hitboxY + hitboxH) {
               console.log('✓✓✓ HIT DETECTED! Projectile from player', p.owner, 'hit plane id', planeEl._id);
-              console.log('HP BEFORE hit:', planeEl._hp, 'maxHp:', planeEl._maxHp, 'typeof:', typeof planeEl._hp);
               
-              // Decrement plane HP
-              planeEl._hp = (typeof planeEl._hp === 'number') ? planeEl._hp - 1 : (planeEl._maxHp - 1);
-              console.log('HP AFTER hit:', planeEl._hp, '/', planeEl._maxHp);
+              // Decrementa HP do avião
+              planeEl._hp--;
+              console.log('HP ANTES:', planeEl._hp + 1, '→ HP DEPOIS:', planeEl._hp, '/', planeEl._maxHp);
               
               // Calculate plane center in canvas coordinates
               const planeCenterCanvasX = ((pr.left + pr.width/2 - cr.left) / cr.width) * width;
@@ -349,35 +427,36 @@ function draw() {
               // Remove projectile
               projeteis.splice(i, 1);
               
-              // Check HP and apply appropriate logic
-              console.log('>>> Checking HP condition: planeEl._hp =', planeEl._hp, 'is > 0?', (planeEl._hp > 0));
+              // PRIMEIRO TIRO: Escurece o avião e mostra defesa.png
               if (planeEl._hp > 0) {
-                // FIRST HIT (HP > 0): Make plane darker AND show defesa.png
-                console.log('>>> BRANCH: First hit - making plane darker + showing defesa.png, plane resists');
-                
-                // Make the plane darker (reduce opacity to 60%)
+                console.log('>>> PRIMEIRO TIRO: Escurecendo avião');
                 planeEl.style.opacity = '0.6';
                 planeEl.style.filter = 'brightness(0.7)';
                 
-                // Show defesa.png with fade effect at collision point (larger and slower fade)
-                console.log('>>> defesaImg exists?', defesaImg ? 'YES' : 'NO');
+                // Mostra imagem defesa.png com fade
                 explosao = { 
                   x: planeCenterCanvasX, 
                   y: planeCenterCanvasY, 
-                  size: 100,        // Larger size for better visibility
+                  size: 100, 
                   fade: true, 
                   alpha: 255, 
-                  fadeStep: 10,     // Slower fade (lasts longer)
+                  fadeStep: 10, 
                   img: defesaImg 
                 };
-                console.log('>>> Created defesa.png fade explosion at', planeCenterCanvasX.toFixed(1), planeCenterCanvasY.toFixed(1));
-              } else {
-                // SECOND HIT (HP <= 0): Destroy plane with explosion and falling fragment
-                console.log('>>> BRANCH: Second hit - destroying plane');
                 
-                // Show explosion animation at plane center
+                // Fumaça leve no primeiro tiro
+                addSmoke(planeCenterCanvasX, planeCenterCanvasY, 3, 0.8);
+              } 
+              // SEGUNDO TIRO: Explosão completa e destruição
+              else {
+                console.log('>>> SEGUNDO TIRO: DESTRUINDO AVIÃO');
+                
+                // Explosão animada
                 explosao = { x: planeCenterCanvasX, y: planeCenterCanvasY, size: 120 };
                 explosaoTimer = 40;
+                
+                // Fumaça intensa na destruição
+                addSmoke(planeCenterCanvasX, planeCenterCanvasY, 8, 1.5);
                 console.log('PLANE DESTROYED! Awarding point to player', p.owner);
                 // Award score to shooter
                 if (p.owner === 1 || p.owner === 2) {
@@ -419,7 +498,6 @@ function draw() {
                 console.log('Dispatching planeHit event with 1200ms delay');
                 document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
               }
-              // Exit the projectile loop after handling the hit
               break;
             }
           }
@@ -451,66 +529,25 @@ function draw() {
       pop();
     }
   } else {
-    // Míssil realista dos tanques
     push();
     translate(p.x, p.y);
     let ang = atan2(p.vy, p.vx);
     rotate(ang);
-    
-    // Corpo metálico principal
-    fill(150, 150, 160);
-    stroke(90, 90, 100);
-    strokeWeight(1.2);
-    rect(-8, -2.5, 14, 5, 1.5);
-    
-    // Faixa preta central
-    fill(35, 35, 40);
-    noStroke();
-    rect(-4, -2.5, 4, 5);
-    
-    // Brilho metálico superior
-    fill(190, 190, 200, 160);
-    rect(-6, -2, 10, 1.5);
-    
-    // Ogiva cônica vermelha
-    fill(200, 25, 25);
-    stroke(130, 15, 15);
+    // Corpo do míssil
+    fill(200);
+    stroke(80);
     strokeWeight(1);
-    triangle(6, 0, 8, -3.5, 8, 3.5);
-    triangle(8, -3.5, 8, 3.5, 11, 0);
-    
-    // Aletas estabilizadoras
-    fill(70, 70, 80);
-    stroke(45, 45, 55);
-    strokeWeight(0.7);
-    triangle(-8, -2.5, -11, -5.5, -8, -1.5);
-    triangle(-8, 2.5, -11, 5.5, -8, 1.5);
-    
-    // Propulsão: chamas realistas em camadas
+    rect(-8, -3, 16, 6, 3);
+    // Ponta vermelha
+    fill(220, 0, 0);
     noStroke();
-    let fireLen = 6 + random(2, 5);
-    let fireW = 4 + random(0.5, 2);
-    
-    // Núcleo branco-quente
-    fill(255, 245, 220, 220);
-    ellipse(-11, 0, fireLen * 0.35, fireW * 0.5);
-    
-    // Camada amarela-laranja
-    fill(255, 160, 40, 190);
-    ellipse(-12, 0, fireLen * 0.65, fireW * 0.85);
-    
-    // Camada externa laranja-vermelha
-    fill(255, 90, 10, 150);
-    ellipse(-13, 0, fireLen, fireW);
-    
-    // Faíscas ocasionais
-    if (random() > 0.65) {
-      fill(255, 220, 120, 220);
-      let sx = -14 - random(2, 4);
-      let sy = random(-3, 3);
-      ellipse(sx, sy, random(1.5, 3), random(0.8, 2));
-    }
-    
+    ellipse(8, 0, 7, 7);
+    // Cauda de fogo animada
+    let fireLen = 6 + random(2, 6);
+    fill(255, 180, 0, 180);
+    ellipse(-10, 0, fireLen, 6);
+    fill(255, 80, 0, 120);
+    ellipse(-13, 0, fireLen * 0.7, 4);
     pop();
   }
 
@@ -530,6 +567,9 @@ function draw() {
           setTimeout(() => atualizarBarraVida(damagedIdx === 0 ? 'vida1' : 'vida2', vida[damagedIdx]), 50);
           explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 };
           explosaoTimer = 40;
+          
+          // Adiciona fumaça da explosão de bomba
+          addSmoke((damagedIdx === 0 ? tanque1.x : tanque2.x), (damagedIdx === 0 ? tanque1.y : tanque2.y), 6, 1.3);
           projeteis.splice(i, 1);
           if (damagedIdx === 0 && vida[damagedIdx] > 0) {
             tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000);
@@ -558,6 +598,10 @@ function draw() {
           setTimeout(() => atualizarBarraVida(adversarioIdx === 0 ? 'vida1' : 'vida2', vida[adversarioIdx]), 50);
           explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 };
           explosaoTimer = 40;
+          
+          // Adiciona fumaça da explosão de tanque
+          addSmoke(adversarioTank.x, adversarioTank.y, 10, 1.8);
+          
           projeteis.splice(i, 1);
           if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
@@ -580,6 +624,17 @@ function draw() {
       }
     }
   }
+  
+  // Fumaça contínua dos tanques destruídos
+  if (vida[0] <= 0 && frameCount % 8 === 0) {
+    addSmoke(tanque1.x, tanque1.y - 20, 1, 0.8);
+  }
+  if (vida[1] <= 0 && frameCount % 8 === 0) {
+    addSmoke(tanque2.x, tanque2.y - 20, 1, 0.8);
+  }
+  
+  // Renderiza todas as partículas de fumaça (atrás de tudo)
+  displaySmoke();
 }
 
 // Função para alterar valores dos controles
@@ -746,9 +801,6 @@ if (typeof atualizarBarraVida !== 'function') {
     document.body.appendChild(el);
   el._maxHp = 2; // number of successful hits to destroy (now 2 hits)
   el._hp = el._maxHp;
-  // Always start with full brightness and opacity
-  el.style.opacity = '1';
-  el.style.filter = 'brightness(1)';
   // render HUD
   updatePlaneHUD(el);
     // assign id
@@ -887,18 +939,19 @@ if (typeof atualizarBarraVida !== 'function') {
       // Defense is handled in the projectile collision path so charges and blocking are deterministic.
 
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
-        // Plane exited right side - save HP and appearance state before respawning
+        // Salva HP antes de remover o avião
         const savedHp = active._hp;
         const wasDamaged = (savedHp < active._maxHp);
-        console.log('Plane exited screen, HP was:', savedHp, 'damaged?', wasDamaged);
+        console.log('Plane exited screen (dir=1), HP was:', savedHp);
         
+        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = -1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
         
-        // Restore HP and appearance
+        // Restaura HP e aparência escura se estava danificado
         active._hp = savedHp;
         if (wasDamaged) {
           active.style.opacity = '0.6';
@@ -906,18 +959,19 @@ if (typeof atualizarBarraVida !== 'function') {
           console.log('Restored damaged appearance, HP:', active._hp);
         }
       } else if (active._dir === -1 && active._x <= -BUFFER) {
-        // Plane exited left side - save HP and appearance state before respawning
+        // Salva HP antes de remover o avião
         const savedHp = active._hp;
         const wasDamaged = (savedHp < active._maxHp);
-        console.log('Plane exited screen, HP was:', savedHp, 'damaged?', wasDamaged);
+        console.log('Plane exited screen (dir=-1), HP was:', savedHp);
         
+        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = 1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
         
-        // Restore HP and appearance
+        // Restaura HP e aparência escura se estava danificado
         active._hp = savedHp;
         if (wasDamaged) {
           active.style.opacity = '0.6';
