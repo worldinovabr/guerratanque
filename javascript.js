@@ -4,6 +4,7 @@ let howlerSomTiro;
   
 let tanque1Img, tanque2Img, fundoImg, explosionSprite, tanque1QuebradoImg, tanque2QuebradoImg;
 let bombaImg; // image for plane bombs (assets/bomba.png)
+let defesaImg; // image for plane defensive effect (assets/defesa.png)
 let tanque1, tanque2;
 let projeteis = [];
 let turno = 1;
@@ -25,8 +26,29 @@ let howlerFundoMusical;
 let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
-const PLANE_SPEED_FACTOR = 0.65; // 1.0 = normal speed, <1 slower
+const PLANE_SPEED_FACTOR = 1.3; // 1.0 = normal speed, <1 slower
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
+let planeCounter = 0; // unique id for planes (kept for future use)
+
+// --- Plane HUD: show plane HP to the player ---
+function updatePlaneHUD(planeEl) {
+  try {
+    // HUD intentionally disabled: remove any existing HUD and do nothing.
+    // The user requested the on-screen plane life bars be removed because they were not working.
+    // Keep a cleanup path so any pre-existing element is removed.
+    const existing = document.getElementById('plane-life-hud');
+    if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    return;
+  } catch (e) {
+    // ignore HUD errors
+  }
+}
+
+function removePlaneHUD() {
+  const hud = document.getElementById('plane-life-hud');
+  if (hud && hud.parentNode) hud.parentNode.removeChild(hud);
+}
+
 
 // Inicializa o som da explosão, música de fundo e som do tiro com Howler.js após o carregamento da página
 window.addEventListener('DOMContentLoaded', function() {
@@ -136,6 +158,11 @@ function preload() {
     undefined,
     () => { aviaoQuebrado2Img = placeholder(120, 60, 'AQ2'); }
   );
+  defesaImg = loadImage(
+    'assets/defesa.png',
+    undefined,
+    () => { defesaImg = placeholder(64, 64, 'DEF'); }
+  );
   tanque1QuebradoImg = loadImage(
     "tanquequebrado1.png",
     undefined,
@@ -196,7 +223,12 @@ function draw() {
       // Static frame + fade out using tint alpha
       push();
       // alpha is 0..255
-      if (explosao.fallback || !explosionSprite) {
+      if (explosao.img) {
+        // draw provided image (e.g., defense icon) with fade
+        tint(255, explosao.alpha);
+        image(explosao.img, explosao.x - explosao.size / 2, explosao.y - explosao.size / 2, explosao.size, explosao.size);
+        noTint();
+      } else if (explosao.fallback || !explosionSprite) {
         // fallback: draw a quick visible circle where the explosion should be
         noStroke();
         fill(255, 200, 0, explosao.alpha);
@@ -287,7 +319,30 @@ function draw() {
             const planeY = ((pr.top - cr.top) / cr.height) * height;
             const planeW = (pr.width / cr.width) * width;
             const planeH = (pr.height / cr.height) * height;
-            if (p.x > planeX && p.x < planeX + planeW && p.y > planeY && p.y < planeY + planeH) {
+            // Reduce hitbox to 65% of original size to make it harder to hit planes
+            const hitboxW = planeW * 0.62;
+            const hitboxH = planeH * 0.62;
+            const hitboxX = planeX + (planeW - hitboxW) / 2;
+            const hitboxY = planeY + (planeH - hitboxH) / 2;
+            if (p.x > hitboxX && p.x < hitboxX + hitboxW && p.y > hitboxY && p.y < hitboxY + hitboxH) {
+              // No defense: a successful player projectile always damages the plane.
+              planeEl._hp = (typeof planeEl._hp === 'number') ? planeEl._hp - 1 : (planeEl._maxHp - 1);
+              console.log('plane id', planeEl._id, 'hp now', planeEl._hp);
+              updatePlaneHUD(planeEl);
+              
+              // if plane still has HP (HP > 0), show defesa.png as damage feedback and remove projectile
+              if (planeEl._hp > 0) {
+                const planeCenterScreenX = pr.left + pr.width / 2;
+                const planeCenterScreenY = pr.top + pr.height / 2;
+                const planeCenterCanvasX = ((planeCenterScreenX - cr.left) / cr.width) * width;
+                const planeCenterCanvasY = ((planeCenterScreenY - cr.top) / cr.height) * height;
+                // First hit: show defesa.png with fade
+                explosao = { x: planeCenterCanvasX, y: planeCenterCanvasY, size: 64, fade: true, alpha: 255, fadeStep: 20, img: defesaImg };
+                projeteis.splice(i, 1);
+                break;
+              }
+              
+              // HP reached zero (planeEl._hp <= 0) -> destroy plane on this hit
               // award score to shooter
               if (p.owner === 1 || p.owner === 2) {
                 placar[p.owner - 1]++;
@@ -319,7 +374,8 @@ function draw() {
               };
               fallenPlanes.push(frag);
               projeteis.splice(i, 1);
-              // tell plane manager to respawn after a short delay so the fallen fragment is visible
+              // remove HUD then tell plane manager to respawn after a short delay so the fallen fragment is visible
+              try { removePlaneHUD(); } catch (e) {}
               document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
               break;
             }
@@ -598,7 +654,14 @@ if (typeof atualizarBarraVida !== 'function') {
       el.style.transform = 'translateY(-50%) scaleX(-1)';
     }
     document.body.appendChild(el);
-    console.log('createPlane dir=', dir, 'startX=', el._x, 'top=', topY, 'width=', el.style.width);
+  el._maxHp = 2; // number of successful hits to destroy (now 2 hits)
+  el._hp = el._maxHp;
+  // render HUD
+  updatePlaneHUD(el);
+    // assign id
+    planeCounter++;
+    el._id = planeCounter;
+  console.log('createPlane dir=', dir, 'startX=', el._x, 'top=', topY, 'width=', el.style.width, 'id=', el._id, 'maxHp=', el._maxHp);
     return el;
   }
 
@@ -625,6 +688,8 @@ if (typeof atualizarBarraVida !== 'function') {
           active = createPlane(dir);
           currentDir = dir;
         }
+        // update HUD for the new plane
+        if (active) updatePlaneHUD(active);
       }
     } catch (e) {
       console.warn('planeHit handler error', e);
@@ -657,6 +722,7 @@ if (typeof atualizarBarraVida !== 'function') {
       active.style.left = active._x + 'px';
 
       // Plane drop logic: occasionally drop a bomb aiming to the area between tanks
+      // Both directions can drop bombs
       try {
   if (p5Ready && !active._nextDrop) active._nextDrop = ts + 2000; // start drops after 2s once p5 is ready
   if (p5Ready && ts >= active._nextDrop) {
@@ -717,14 +783,19 @@ if (typeof atualizarBarraVida !== 'function') {
         // ignore drop errors
       }
 
+      // Defensive shot handling removed from plane manager to avoid double-interception.
+      // Defense is handled in the projectile collision path so charges and blocking are deterministic.
+
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
-        // remove and spawn opposite; randomize altitude for the next loop
+        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+        try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = -1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
       } else if (active._dir === -1 && active._x <= -BUFFER) {
-        // remove and spawn opposite; randomize altitude for the next loop
+        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+        try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = 1;
         planeTopY = computeRandomTop();
