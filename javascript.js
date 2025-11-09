@@ -352,25 +352,25 @@ function draw() {
               // Check HP and apply appropriate logic
               console.log('>>> Checking HP condition: planeEl._hp =', planeEl._hp, 'is > 0?', (planeEl._hp > 0));
               if (planeEl._hp > 0) {
-                // FIRST HIT (HP > 0): Make plane darker to show it's damaged
-                console.log('>>> BRANCH: First hit - making plane darker, plane resists');
+                // FIRST HIT (HP > 0): Make plane darker AND show defesa.png
+                console.log('>>> BRANCH: First hit - making plane darker + showing defesa.png, plane resists');
                 
                 // Make the plane darker (reduce opacity to 60%)
                 planeEl.style.opacity = '0.6';
                 planeEl.style.filter = 'brightness(0.7)';
                 
-                // Show defesa.png with fade effect
+                // Show defesa.png with fade effect at collision point (larger and slower fade)
                 console.log('>>> defesaImg exists?', defesaImg ? 'YES' : 'NO');
                 explosao = { 
                   x: planeCenterCanvasX, 
                   y: planeCenterCanvasY, 
-                  size: 80, 
+                  size: 100,        // Larger size for better visibility
                   fade: true, 
                   alpha: 255, 
-                  fadeStep: 15, 
+                  fadeStep: 10,     // Slower fade (lasts longer)
                   img: defesaImg 
                 };
-                console.log('>>> Created fade explosion:', explosao);
+                console.log('>>> Created defesa.png fade explosion at', planeCenterCanvasX.toFixed(1), planeCenterCanvasY.toFixed(1));
               } else {
                 // SECOND HIT (HP <= 0): Destroy plane with explosion and falling fragment
                 console.log('>>> BRANCH: Second hit - destroying plane');
@@ -451,25 +451,66 @@ function draw() {
       pop();
     }
   } else {
+    // Míssil realista dos tanques
     push();
     translate(p.x, p.y);
     let ang = atan2(p.vy, p.vx);
     rotate(ang);
-    // Corpo do míssil
-    fill(200);
-    stroke(80);
-    strokeWeight(1);
-    rect(-8, -3, 16, 6, 3);
-    // Ponta vermelha
-    fill(220, 0, 0);
+    
+    // Corpo metálico principal
+    fill(150, 150, 160);
+    stroke(90, 90, 100);
+    strokeWeight(1.2);
+    rect(-8, -2.5, 14, 5, 1.5);
+    
+    // Faixa preta central
+    fill(35, 35, 40);
     noStroke();
-    ellipse(8, 0, 7, 7);
-    // Cauda de fogo animada
-    let fireLen = 6 + random(2, 6);
-    fill(255, 180, 0, 180);
-    ellipse(-10, 0, fireLen, 6);
-    fill(255, 80, 0, 120);
-    ellipse(-13, 0, fireLen * 0.7, 4);
+    rect(-4, -2.5, 4, 5);
+    
+    // Brilho metálico superior
+    fill(190, 190, 200, 160);
+    rect(-6, -2, 10, 1.5);
+    
+    // Ogiva cônica vermelha
+    fill(200, 25, 25);
+    stroke(130, 15, 15);
+    strokeWeight(1);
+    triangle(6, 0, 8, -3.5, 8, 3.5);
+    triangle(8, -3.5, 8, 3.5, 11, 0);
+    
+    // Aletas estabilizadoras
+    fill(70, 70, 80);
+    stroke(45, 45, 55);
+    strokeWeight(0.7);
+    triangle(-8, -2.5, -11, -5.5, -8, -1.5);
+    triangle(-8, 2.5, -11, 5.5, -8, 1.5);
+    
+    // Propulsão: chamas realistas em camadas
+    noStroke();
+    let fireLen = 6 + random(2, 5);
+    let fireW = 4 + random(0.5, 2);
+    
+    // Núcleo branco-quente
+    fill(255, 245, 220, 220);
+    ellipse(-11, 0, fireLen * 0.35, fireW * 0.5);
+    
+    // Camada amarela-laranja
+    fill(255, 160, 40, 190);
+    ellipse(-12, 0, fireLen * 0.65, fireW * 0.85);
+    
+    // Camada externa laranja-vermelha
+    fill(255, 90, 10, 150);
+    ellipse(-13, 0, fireLen, fireW);
+    
+    // Faíscas ocasionais
+    if (random() > 0.65) {
+      fill(255, 220, 120, 220);
+      let sx = -14 - random(2, 4);
+      let sy = random(-3, 3);
+      ellipse(sx, sy, random(1.5, 3), random(0.8, 2));
+    }
+    
     pop();
   }
 
