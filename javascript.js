@@ -309,9 +309,15 @@ function draw() {
 
       // Player projectiles can hit the plane
       if (p && (p.owner === 1 || p.owner === 2)) {
+        // Add a check counter to this projectile
+        if (!p._checkCount) p._checkCount = 0;
+        p._checkCount++;
         try {
           const planeEl = document.querySelector('.aviao-fly');
           const canvas = document.querySelector('canvas');
+          if (!planeEl) {
+            if (p._checkCount === 1) console.log('No plane element found (.aviao-fly)');
+          }
           if (planeEl && canvas) {
             const pr = planeEl.getBoundingClientRect();
             const cr = canvas.getBoundingClientRect();
@@ -319,73 +325,114 @@ function draw() {
             const planeY = ((pr.top - cr.top) / cr.height) * height;
             const planeW = (pr.width / cr.width) * width;
             const planeH = (pr.height / cr.height) * height;
-            // Reduce hitbox to 65% of original size to make it harder to hit planes
-            const hitboxW = planeW * 0.62;
-            const hitboxH = planeH * 0.62;
-            const hitboxX = planeX + (planeW - hitboxW) / 2;
-            const hitboxY = planeY + (planeH - hitboxH) / 2;
+            // Use full plane size as hitbox (easier to hit for testing)
+            const hitboxW = planeW * 1.0;
+            const hitboxH = planeH * 1.0;
+            const hitboxX = planeX;
+            const hitboxY = planeY;
+            // Log first few checks for this projectile
+            if (p._checkCount <= 3) {
+              console.log('Check #' + p._checkCount + ': proj(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ') vs plane hitbox(' + hitboxX.toFixed(1) + '-' + (hitboxX+hitboxW).toFixed(1) + ', ' + hitboxY.toFixed(1) + '-' + (hitboxY+hitboxH).toFixed(1) + ')');
+            }
             if (p.x > hitboxX && p.x < hitboxX + hitboxW && p.y > hitboxY && p.y < hitboxY + hitboxH) {
-              // No defense: a successful player projectile always damages the plane.
+              console.log('✓✓✓ HIT DETECTED! Projectile from player', p.owner, 'hit plane id', planeEl._id);
+              console.log('HP BEFORE hit:', planeEl._hp, 'maxHp:', planeEl._maxHp, 'typeof:', typeof planeEl._hp);
+              
+              // Decrement plane HP
               planeEl._hp = (typeof planeEl._hp === 'number') ? planeEl._hp - 1 : (planeEl._maxHp - 1);
-              console.log('plane id', planeEl._id, 'hp now', planeEl._hp);
-              updatePlaneHUD(planeEl);
+              console.log('HP AFTER hit:', planeEl._hp, '/', planeEl._maxHp);
               
-              // if plane still has HP (HP > 0), show defesa.png as damage feedback and remove projectile
-              if (planeEl._hp > 0) {
-                const planeCenterScreenX = pr.left + pr.width / 2;
-                const planeCenterScreenY = pr.top + pr.height / 2;
-                const planeCenterCanvasX = ((planeCenterScreenX - cr.left) / cr.width) * width;
-                const planeCenterCanvasY = ((planeCenterScreenY - cr.top) / cr.height) * height;
-                // First hit: show defesa.png with fade
-                explosao = { x: planeCenterCanvasX, y: planeCenterCanvasY, size: 64, fade: true, alpha: 255, fadeStep: 20, img: defesaImg };
-                projeteis.splice(i, 1);
-                break;
-              }
+              // Calculate plane center in canvas coordinates
+              const planeCenterCanvasX = ((pr.left + pr.width/2 - cr.left) / cr.width) * width;
+              const planeCenterCanvasY = ((pr.top + pr.height/2 - cr.top) / cr.height) * height;
               
-              // HP reached zero (planeEl._hp <= 0) -> destroy plane on this hit
-              // award score to shooter
-              if (p.owner === 1 || p.owner === 2) {
-                placar[p.owner - 1]++;
-                document.getElementById('p1score').textContent = placar[0];
-                document.getElementById('p2score').textContent = placar[1];
-              }
-              // create a falling broken-plane fragment at the visual center of the plane
-              const planeCenterScreenX = pr.left + pr.width / 2;
-              const planeCenterScreenY = pr.top + pr.height / 2;
-              const planeCenterCanvasX = ((planeCenterScreenX - cr.left) / cr.width) * width;
-              const planeCenterCanvasY = ((planeCenterScreenY - cr.top) / cr.height) * height;
-              const planeWCanvas = (pr.width / cr.width) * width;
-              const planeHCanvas = (pr.height / cr.height) * height;
-              const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
-              // choose broken image depending on plane direction (dir === 1 -> quebrado1 else quebrado2)
-              const brokenImg = (planeEl._dir === 1 ? aviaoQuebrado1Img : aviaoQuebrado2Img) || null;
-              // initial fragment physics
-              const frag = {
-                x: planeCenterCanvasX,
-                y: planeCenterCanvasY,
-                size: sizeForPlane,
-                vx: (planeEl._dir || 1) * (1 + Math.random() * 2),
-                vy: 1 + Math.random() * 2,
-                grav: 0.18,
-                rot: 0,
-                rotV: (Math.random() - 0.5) * 0.08,
-                img: brokenImg,
-                alpha: 255
-              };
-              fallenPlanes.push(frag);
+              // Remove projectile
               projeteis.splice(i, 1);
-              // remove HUD then tell plane manager to respawn after a short delay so the fallen fragment is visible
-              try { removePlaneHUD(); } catch (e) {}
-              document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
+              
+              // Check HP and apply appropriate logic
+              console.log('>>> Checking HP condition: planeEl._hp =', planeEl._hp, 'is > 0?', (planeEl._hp > 0));
+              if (planeEl._hp > 0) {
+                // FIRST HIT (HP > 0): Make plane darker to show it's damaged
+                console.log('>>> BRANCH: First hit - making plane darker, plane resists');
+                
+                // Make the plane darker (reduce opacity to 60%)
+                planeEl.style.opacity = '0.6';
+                planeEl.style.filter = 'brightness(0.7)';
+                
+                // Show defesa.png with fade effect
+                console.log('>>> defesaImg exists?', defesaImg ? 'YES' : 'NO');
+                explosao = { 
+                  x: planeCenterCanvasX, 
+                  y: planeCenterCanvasY, 
+                  size: 80, 
+                  fade: true, 
+                  alpha: 255, 
+                  fadeStep: 15, 
+                  img: defesaImg 
+                };
+                console.log('>>> Created fade explosion:', explosao);
+              } else {
+                // SECOND HIT (HP <= 0): Destroy plane with explosion and falling fragment
+                console.log('>>> BRANCH: Second hit - destroying plane');
+                
+                // Show explosion animation at plane center
+                explosao = { x: planeCenterCanvasX, y: planeCenterCanvasY, size: 120 };
+                explosaoTimer = 40;
+                console.log('PLANE DESTROYED! Awarding point to player', p.owner);
+                // Award score to shooter
+                if (p.owner === 1 || p.owner === 2) {
+                  placar[p.owner - 1]++;
+                  document.getElementById('p1score').textContent = placar[0];
+                  document.getElementById('p2score').textContent = placar[1];
+                  console.log('Score updated: Player 1 =', placar[0], 'Player 2 =', placar[1]);
+                }
+                
+                // Create falling broken plane fragment
+                const planeWCanvas = (pr.width / cr.width) * width;
+                const planeHCanvas = (pr.height / cr.height) * height;
+                const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
+                const brokenImg = aviaoQuebrado1Img; // Always use aviaoquebrado1
+                console.log('brokenImg loaded?', brokenImg ? 'YES' : 'NO', 'size:', sizeForPlane);
+                
+                const frag = {
+                  x: planeCenterCanvasX,
+                  y: planeCenterCanvasY,
+                  size: sizeForPlane,
+                  vx: (planeEl._dir || 1) * (1 + Math.random() * 2),
+                  vy: 1 + Math.random() * 2,
+                  grav: 0.18,
+                  rot: 0,
+                  rotV: (Math.random() - 0.5) * 0.08,
+                  img: brokenImg,
+                  alpha: 255
+                };
+                fallenPlanes.push(frag);
+                console.log('Created falling plane fragment at', planeCenterCanvasX.toFixed(1), planeCenterCanvasY.toFixed(1));
+                
+                // Remove the plane DOM element immediately
+                if (planeEl && planeEl.parentNode) {
+                  console.log('Removing plane element from DOM');
+                  planeEl.parentNode.removeChild(planeEl);
+                }
+                
+                // Tell plane manager to respawn after delay
+                console.log('Dispatching planeHit event with 1200ms delay');
+                document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
+              }
+              // Exit the projectile loop after handling the hit
               break;
             }
           }
         } catch (err) {
           // ignore plane-hit detection errors
+          console.warn('plane collision detection error:', err);
         }
       }
 
-  // Desenha um míssil estilizado (ou bomba do avião)
+      // If projectile was already removed (hit plane), skip drawing and other checks
+      if (!projeteis[i]) continue;
+
+      // Desenha um míssil estilizado (ou bomba do avião)
   if (p && p.owner === 0) {
     // bomba: desenhe imagem quando disponível, senão use fallback óbvio
     if (typeof bombaImg !== 'undefined' && bombaImg) {
@@ -533,14 +580,16 @@ function disparar() {
   let angulo = atan2(dy, dx);
 
     const fatorVelocidade = 0.5; // Reduz a velocidade do tiro
-    projeteis.push({
+    const proj = {
       x: origem.x,
       y: origem.y,
       vx: cos(angulo) * potencia * fatorVelocidade,
       vy: sin(angulo) * potencia * fatorVelocidade,
       gravidade: 0.2,
       owner: turno // who fired this projectile (1 or 2)
-    });
+    };
+    console.log('DISPARAR: Player', turno, 'fired projectile from', origem.x.toFixed(1), origem.y.toFixed(1), 'velocity', proj.vx.toFixed(2), proj.vy.toFixed(2));
+    projeteis.push(proj);
 }
 
 function moverTanque(direcao) {
@@ -656,6 +705,9 @@ if (typeof atualizarBarraVida !== 'function') {
     document.body.appendChild(el);
   el._maxHp = 2; // number of successful hits to destroy (now 2 hits)
   el._hp = el._maxHp;
+  // Always start with full brightness and opacity
+  el.style.opacity = '1';
+  el.style.filter = 'brightness(1)';
   // render HUD
   updatePlaneHUD(el);
     // assign id
@@ -674,22 +726,29 @@ if (typeof atualizarBarraVida !== 'function') {
   // When a plane is hit, respawn a fresh plane in the same direction.
   // If the event supplies a delayRespawn (ms) we'll wait that long before creating the new plane
   document.addEventListener('planeHit', (ev) => {
+    console.log('planeHit event received!', ev.detail);
     try {
       if (active) {
+        console.log('Removing current active plane, dir=', active._dir);
         const dir = active._dir || currentDir;
         active.remove();
         const delay = ev && ev.detail && typeof ev.detail.delayRespawn === 'number' ? ev.detail.delayRespawn : 0;
+        console.log('Will respawn plane after', delay, 'ms');
         if (delay > 0) {
           setTimeout(() => {
+            console.log('Creating new plane after delay, dir=', dir);
             active = createPlane(dir);
             currentDir = dir;
           }, delay);
         } else {
+          console.log('Creating new plane immediately, dir=', dir);
           active = createPlane(dir);
           currentDir = dir;
         }
         // update HUD for the new plane
         if (active) updatePlaneHUD(active);
+      } else {
+        console.warn('planeHit event but no active plane!');
       }
     } catch (e) {
       console.warn('planeHit handler error', e);
@@ -787,19 +846,43 @@ if (typeof atualizarBarraVida !== 'function') {
       // Defense is handled in the projectile collision path so charges and blocking are deterministic.
 
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
-        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+        // Plane exited right side - save HP and appearance state before respawning
+        const savedHp = active._hp;
+        const wasDamaged = (savedHp < active._maxHp);
+        console.log('Plane exited screen, HP was:', savedHp, 'damaged?', wasDamaged);
+        
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = -1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
+        
+        // Restore HP and appearance
+        active._hp = savedHp;
+        if (wasDamaged) {
+          active.style.opacity = '0.6';
+          active.style.filter = 'brightness(0.7)';
+          console.log('Restored damaged appearance, HP:', active._hp);
+        }
       } else if (active._dir === -1 && active._x <= -BUFFER) {
-        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+        // Plane exited left side - save HP and appearance state before respawning
+        const savedHp = active._hp;
+        const wasDamaged = (savedHp < active._maxHp);
+        console.log('Plane exited screen, HP was:', savedHp, 'damaged?', wasDamaged);
+        
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = 1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
+        
+        // Restore HP and appearance
+        active._hp = savedHp;
+        if (wasDamaged) {
+          active.style.opacity = '0.6';
+          active.style.filter = 'brightness(0.7)';
+          console.log('Restored damaged appearance, HP:', active._hp);
+        }
       }
     }
 
