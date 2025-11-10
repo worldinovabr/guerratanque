@@ -1313,55 +1313,64 @@ if (typeof atualizarBarraVida !== 'function') {
   if (p5Ready && !active._nextDrop) active._nextDrop = ts + 2000; // start drops after 2s once p5 is ready
   if (p5Ready && ts >= active._nextDrop) {
           const canvas = document.querySelector('canvas');
-          const pr = active.getBoundingClientRect ? active.getBoundingClientRect() : { left: active._x, top: planeTopY, width: parseFloat(active.style.width) || 48, height: 24 };
-          // ensure p5 canvas and width/height are ready to avoid NaN coordinates
+          // robust bounding rect + fallbacks so this works on mobile where sizes may be zero briefly
+          const pr = (active.getBoundingClientRect && typeof active.getBoundingClientRect === 'function')
+            ? active.getBoundingClientRect()
+            : { left: active._x || 0, top: planeTopY || 0, width: parseFloat(active.style.width) || 48, height: 24 };
           if (!canvas) {
             console.log('plane drop skipped: canvas not found yet');
             active._nextDrop = ts + 500; // try again shortly
           } else {
             const cr = canvas.getBoundingClientRect();
-            if (typeof width !== 'number' || typeof height !== 'number' || cr.width === 0 || cr.height === 0) {
-              console.log('plane drop skipped: canvas/size not ready', 'width', width, 'height', height, 'cr', cr.width, cr.height);
+            // fallback sizes if bounding rect is zero (common during layout changes on mobile)
+            const crw = (cr && cr.width) || canvas.offsetWidth || canvas.clientWidth || 1;
+            const crh = (cr && cr.height) || canvas.offsetHeight || canvas.clientHeight || 1;
+            const canvasWidth = (typeof width === 'number' && isFinite(width)) ? width : crw;
+            const canvasHeight = (typeof height === 'number' && isFinite(height)) ? height : crh;
+            if (crw === 0 || crh === 0) {
+              console.log('plane drop skipped: canvas rect zero, using fallbacks', crw, crh);
               active._nextDrop = ts + 500;
             } else {
-              const originX = ((pr.left - cr.left) / cr.width) * width + (pr.width / cr.width) * width / 2;
-              const originY = ((pr.top - cr.top) / cr.height) * height + (pr.height / cr.height) * height / 2;
+              // compute plane center on canvas using safe fallbacks
+              const prWidth = pr.width || parseFloat(active.style.width) || 48;
+              const prHeight = pr.height || 24;
+              const originX = (((pr.left || (active._x || 0)) - cr.left) / crw) * canvasWidth + (prWidth / crw) * canvasWidth / 2;
+              const originY = (((pr.top || planeTopY || 0) - cr.top) / crh) * canvasHeight + (prHeight / crh) * canvasHeight / 2;
+              // clamp to canvas bounds to avoid NaN or offscreen values on mobile
+              const ox = Math.max(0, Math.min(canvasWidth, originX));
+              const oy = Math.max(0, Math.min(canvasHeight, originY));
               // Linha do solo (aprox da base dos tanques). Usamos y dos tanques (estão centrados).
-              const groundY = tanque1.y; // ambos tanques compartilham a mesma linha y
-              const dyGround = groundY - originY;
+              const groundY = tanque1.y; // ambos tanques compartilham a mesma linha y (canvas coords)
+              const dyGround = groundY - oy;
               // target a random x between tanks with some margin
               const tanksMinX = Math.min(tanque1.x, tanque2.x) - 40;
               const tanksMaxX = Math.max(tanque1.x, tanque2.x) + 40;
               const targetX = tanksMinX + Math.random() * (tanksMaxX - tanksMinX);
               // Física: y(t) = originY + vy*t + 0.5*g*t^2. Queremos y(t_landing) ~= groundY.
-              // Escolhemos g e vy inicial e resolvemos t. Para simplificar, vy inicial pequeno para queda quase vertical.
-              const grav = 0.15; // mesma gravidade que já usávamos
-              const initialVy = 1.0 + Math.random()*0.8; // leve velocidade inicial para baixo
-              // 0.5*g*t^2 + initialVy*t - dyGround = 0  (with dyGround = groundY-originY)
-              // a = 0.5*g, b = initialVy, c = -dyGround
-              const a = 0.2 * grav;
+              const grav = 0.15;
+              const initialVy = 1.0 + Math.random() * 0.8;
+              // quadratic: 0.5*g*t^2 + initialVy*t - dyGround = 0
+              const a = 0.5 * grav;
               const b = initialVy;
               const c = -dyGround;
               let tLand = 0;
-              const disc = b*b - 4*a*c;
+              const disc = b * b - 4 * a * c;
               if (disc >= 0) {
                 const sqrtD = Math.sqrt(disc);
-                const t1 = (-b + sqrtD) / (2*a);
-                const t2 = (-b - sqrtD) / (2*a);
-                // escolhe a raiz positiva maior (tempo futuro)
+                const t1 = (-b + sqrtD) / (2 * a);
+                const t2 = (-b - sqrtD) / (2 * a);
                 tLand = Math.max(t1, t2);
               }
-              if (!tLand || !isFinite(tLand) || tLand < 0.3) {
-                // fallback: estimativa simples se algo deu errado
-                tLand = Math.sqrt((2 * dyGround) / grav);
+              if (!tLand || !isFinite(tLand) || tLand < 0.25) {
+                // fallback: simple free-fall estimate
+                tLand = Math.max(0.25, Math.sqrt((2 * Math.max(8, Math.abs(dyGround))) / grav));
               }
-              // vx necessário para alcançar targetX em tLand
-              const dx = targetX - originX;
+              const dx = targetX - ox;
               const vx = dx / tLand;
-              console.log('plane drop ->', 'from', Math.round(originX), Math.round(originY), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
-              projeteis.push({ x: originX, y: originY, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
-              // schedule next drop in 2 seconds (2000 ms)
-              active._nextDrop = ts + 2000;
+              console.log('plane drop ->', 'from', Math.round(ox), Math.round(oy), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
+              projeteis.push({ x: ox, y: oy, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
+              // schedule next drop; add a small random to avoid strict rhythm and adapt for mobile
+              active._nextDrop = ts + (1800 + Math.floor(Math.random() * 1000));
             }
           }
         }
