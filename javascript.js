@@ -84,6 +84,121 @@ function addSmoke(x, y, count = 1, intensity = 1) {
   }
 }
 
+// --- Scene (chimney) smoke system - separate from generic smoke ---
+let sceneSmokeParticles = [];
+let sceneEmitters = [];
+
+class SceneSmokeParticle {
+  constructor(x, y, intensity = 1) {
+    this.x = x;
+    this.y = y;
+    this.seed = random(10000);
+    this.intensity = intensity;
+    this.life = Math.round(50 + random(30, 20) * intensity);
+    this.baseLife = this.life;
+    this.size = random(8, 28) * intensity;
+    this.color = random(30, 100);
+    this.alpha = map(this.life, 0, this.baseLife, 0, 160);
+    this.vx = random(-0.10, 0.02);
+    this.vy = random(-0.18, -0.04);
+  }
+
+  update() {
+    const t = frameCount * 0.006;
+    const n1 = noise(this.seed, t);
+    const n2 = noise(this.seed + 47.1, t * 1.1);
+    this.vx += map(n1, 0, 1, -0.02, 0.02) * this.intensity;
+    this.vy += map(n2, 0, 1, -0.01, 0.01) * this.intensity;
+    this.x += this.vx;
+    this.y += this.vy * 0.6; // very slow rise
+    // subtle spread
+    this.vx *= 0.995;
+    this.vy *= 0.997;
+    this.size = lerp(this.size, this.size * (1.1 + 0.5 * this.intensity), 0.012);
+    this.life -= 0.6 + 0.4 * this.intensity;
+    this.alpha = map(this.life, 0, this.baseLife, 0, 160);
+  }
+
+  display() {
+    push();
+    translate(this.x, this.y);
+    noStroke();
+    // thin stem lower part
+    const stemLen = Math.max(4, Math.floor(this.size * 0.18));
+    for (let s = 0; s < stemLen; s++) {
+      const f = s / Math.max(1, stemLen - 1);
+      const sw = this.size * (0.05 + 0.02 * (1 - f));
+      const yOff = s * 1.0;
+      const a = this.alpha * (0.08 * (1 - f));
+      fill(Math.max(6, this.color - 18), a);
+      const ox = (noise(this.seed + s * 3, frameCount * 0.008) - 0.5) * 1.6;
+      ellipse(ox, yOff, sw, sw * 1.8);
+    }
+
+    // stacked blobs with outer soft rings then darker core
+    const blobCount = Math.max(3, Math.floor(this.size / 10));
+    const spineHeight = this.size * (1.8 + 0.8 * this.intensity);
+    for (let b = 0; b < blobCount; b++) {
+      const t = b / (blobCount - 1 || 1);
+      const yOff = lerp(0, -spineHeight, t) + (noise(this.seed + b * 11, frameCount * 0.009) - 0.5) * 4.5;
+      const blobBase = this.size * (0.6 + 1.4 * t) * (1 + 0.06 * noise(this.seed + b * 7));
+      const layers = 5;
+      // outer -> inner
+      for (let L = layers - 1; L >= 0; L--) {
+        const lf = 1 - L / layers;
+        const rad = blobBase * (0.6 + 0.9 * (L / layers)) * (1 + (noise(this.seed + L * 5 + b * 3, frameCount * 0.011) - 0.5) * 0.05);
+        const baseA = this.alpha * (0.14 + 0.7 * (1 - t));
+        const a = baseA * (0.2 + 0.95 * (1 - L / layers));
+        const shade = this.color + Math.round((b - blobCount / 2) * 2);
+        fill(Math.max(4, shade - Math.round(6 * (1 - L / layers))), a);
+        const ox = (noise(this.seed + b * 13 + L * 5, frameCount * 0.009) - 0.5) * (5 * (1 - t));
+        const oy = (noise(this.seed - b * 9 + L * 6, frameCount * 0.008) - 0.5) * 3.5;
+        ellipse(ox, yOff + oy, rad, rad * (0.78 + 0.12 * lf));
+      }
+      // small darker core
+      fill(Math.max(2, this.color - 26), this.alpha * 0.9);
+      ellipse((noise(this.seed + b * 21, frameCount * 0.01) - 0.5) * 2, yOff + (noise(this.seed + b * 27, frameCount * 0.01) - 0.5) * 2, blobBase * 0.6, blobBase * 0.42);
+    }
+
+    pop();
+  }
+
+  isDead() {
+    return this.life <= 0 || this.alpha <= 2;
+  }
+}
+
+function addSceneSmoke(x, y, count = 1, intensity = 1) {
+  for (let i = 0; i < count; i++) {
+    sceneSmokeParticles.push(new SceneSmokeParticle(x + random(-6, 6), y + random(-3, 3), intensity));
+  }
+}
+
+function addSceneEmitter(x, y, rateFrames = 180, intensity = 1, count = 1) {
+  sceneEmitters.push({ x, y, rate: rateFrames, intensity, count, lastFrame: 0 });
+}
+
+function updateSceneEmitters() {
+  for (let e of sceneEmitters) {
+    if (frameCount - e.lastFrame >= e.rate) {
+      addSceneSmoke(e.x + random(-2,2), e.y + random(-1,1), e.count, e.intensity);
+      e.lastFrame = frameCount;
+    }
+  }
+}
+
+function updateSceneSmoke() {
+  for (let i = sceneSmokeParticles.length - 1; i >= 0; i--) {
+    sceneSmokeParticles[i].update();
+    if (sceneSmokeParticles[i].isDead()) sceneSmokeParticles.splice(i, 1);
+  }
+}
+
+function displaySceneSmoke() {
+  // render behind other scene elements
+  for (let p of sceneSmokeParticles) p.display();
+}
+
 function updateSmoke() {
   // Atualiza e remove partículas mortas
   for (let i = smokeParticles.length - 1; i >= 0; i--) {
@@ -256,6 +371,12 @@ function setup() {
   }, 100);
   p5Ready = true;
 
+  // Add two fixed scene emitters (chimney-style) as requested
+  // Coordinates are canvas-space and can be tuned later
+  // Increased frequency: emit every 100 frames (approx every 1.6s at 60fps)
+  addSceneEmitter(300, 330, 10, 0.6, 1);
+  addSceneEmitter(620, 320, 5, 0.4, 1);
+
 }
 
 function draw() {
@@ -264,6 +385,12 @@ function draw() {
   image(fundoImg, 0, 0, width, height);
   
   // Atualiza partículas de fumaça
+  // First update and render scene (background) smoke so it appears behind tanks
+  updateSceneEmitters();
+  updateSceneSmoke();
+  displaySceneSmoke();
+
+  // Then update generic smoke (explosions, debris, etc.) unchanged
   updateSmoke();
 
   // Tanque 1 invertido horizontalmente
