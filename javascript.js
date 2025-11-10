@@ -34,140 +34,60 @@ let planeCounter = 0; // unique id for planes (kept for future use)
 
 // Sistema de fumaça realista
 let smokeParticles = [];
+
 class SmokeParticle {
   constructor(x, y, intensity = 1) {
     this.x = x;
     this.y = y;
-    // Pyramid/plume particles (for tank destruction) should rise slowly and spread outward
     this.pyramid = (intensity >= 2.2);
     if (this.pyramid) {
       this.vx = random(-0.15, 0.15);
-      this.vy = random(-0.15, -0.4); // slow upward motion
+      this.vy = random(-0.15, -0.4);
       this.size = random(28, 48) * (1 + intensity * 0.35);
       this.maxSize = this.size + random(40, 90);
       this.baseLife = Math.round((100 + random(80, 100)) * intensity);
-      this.color = random(20, 50); // darker base for thick smoke
+      this.color = random(20, 50);
     } else {
       this.vx = random(-0.5, 0.5) * intensity;
-      this.vy = random(-1, -2) * intensity; // sobe
+      this.vy = random(-1, -2) * intensity;
       this.size = random(20, 40) * intensity;
       this.maxSize = this.size + random(30, 60);
-      this.baseLife = Math.round((100 + random(40, 10)) * intensity);
-      this.color = random(30, 85); // gray tones
+      this.baseLife = Math.round((100 + random(40, 100)) * intensity);
+      this.color = random(30, 85);
     }
     this.life = this.baseLife;
     this.alpha = map(this.life, 0, this.baseLife, 0, 100);
-    this.rotation = random(TWO_PI);
-    this.rotationSpeed = random(-0.03, 0.03);
-    this.seed = random(10000);
-    this.intensity = intensity;
   }
-  
+
   update() {
-    // time-based turbulence using Perlin noise for smooth organic motion
-    const t = frameCount * 0.008;
-    const n1 = noise(this.seed, t);
-    const n2 = noise(this.seed + 57.3, t * 1.2);
-    if (this.pyramid) {
-      // pyramid plume: encourage outward spread while keeping vertical rise slow
-      this.vx += map(n1, 0, 1, -0.12, 0.12) * (0.9 + 0.2 * this.intensity);
-      // tiny vertical wobble only
-      this.vy += map(n2, 0, 1, -0.02, 0.01);
-      // integrate
-      this.x += this.vx * (0.9 + 0.1 * this.intensity);
-      this.y += this.vy * (0.6); // slower upward motion
-      // gentle damping
-      this.vx *= 0.992;
-      this.vy *= 0.997;
-      // grow and diffuse slightly faster for dense plume base
-      this.size = lerp(this.size, this.maxSize, 0.035 + 0.006 * this.intensity);
-      this.life -= (0.6 + 0.8 * this.intensity);
-      this.alpha = map(this.life, 0, this.baseLife, 0, 220);
-      this.rotation += this.rotationSpeed * (0.5 + 0.3 * this.intensity);
-    } else {
-      // diffused smoke behavior
-      this.vx += map(n1, 0, 1, -0.25, 0.25) * this.intensity;
-      this.vy += map(n2, 0, 1, -0.06, 0.02) * this.intensity; // negative tends upward
-      // integrate
-      this.x += this.vx;
-      this.y += this.vy;
-      // apply gentle damping
-      this.vx *= 0.995;
-      this.vy *= 0.998;
-      // grow and diffuse
-      this.size = lerp(this.size, this.maxSize, 0.03 + 0.005 * this.intensity);
-      // life progression
-      this.life -= (0.8 + 0.6 * this.intensity);
-      this.alpha = map(this.life, 0, this.baseLife, 0, 200);
-      this.rotation += this.rotationSpeed * (0.8 + 0.4 * this.intensity);
-    }
+    // basic upward drift with slight horizontal spread
+    this.x += this.vx;
+    this.y += this.vy;
+    // gentle slowdown of lateral movement
+    this.vx *= 0.998;
+    this.vy *= 0.997;
+    // grow slightly over time until maxSize
+    this.size = lerp(this.size, this.maxSize, 0.01);
+    this.life -= 0.6;
+    this.alpha = map(this.life, 0, this.baseLife, 0, 100);
   }
-  
+
   display() {
     push();
     translate(this.x, this.y);
     noStroke();
-    // If pyramid plume (now render mushroom-style cloud)
-    if (this.pyramid) {
-      // Parameters
-      const stemLayers = 6 + Math.floor(this.intensity * 2);
-      const capLayers = 5 + Math.floor(this.intensity * 2);
-      const stemW = this.size * (0.35 + 0.12 * this.intensity);
-      const stemStep = this.size * 0.28; // vertical spacing for stem
-      // Draw stem: narrow stacked ellipses, darker near base
-      for (let i = 0; i < stemLayers; i++) {
-        const f = i / stemLayers; // 0 bottom -> 1 top
-        const w = stemW * (1 - f * 0.35) * (1 + (noise(this.seed + i, frameCount * 0.01) - 0.5) * 0.08);
-        const h = w * 0.6;
-        const yOff = -i * stemStep;
-        const a = this.alpha * (0.6 - 0.35 * f);
-        const shade = Math.max(4, this.color - 22 + i * 1.8);
-        fill(shade, a);
-        const ox = (noise(this.seed + i * 7, frameCount * 0.012) - 0.5) * 2.5 * (1 - f);
-        ellipse(ox, yOff, w, h);
-      }
-
-      // Draw cap: large flattened ellipses with inner darker core and outer softer ring
-      const capBaseW = this.size * (2.2 + this.intensity * 0.9);
-      const capY = -stemLayers * stemStep + this.size * 0.6; // slightly overlap stem top
-      for (let j = 0; j < capLayers; j++) {
-        const fj = j / capLayers; // 0 bottom -> 1 top
-        const wj = capBaseW * (1 - fj * 0.35) * (1 + (noise(this.seed + 100 + j, frameCount * 0.006) - 0.5) * 0.12);
-        const hj = wj * (0.28 + 0.06 * (1 - fj));
-        const yj = capY - fj * (this.size * 0.9);
-        const aj = this.alpha * (0.9 - 0.7 * fj) * (0.95 - fj * 0.15);
-        const shadej = Math.max(4, this.color - 10 + j * 4);
-        fill(shadej, aj);
-        const oxj = (noise(this.seed + 200 + j, frameCount * 0.008) - 0.5) * 6 * (1 - fj);
-        ellipse(oxj, yj, wj, hj);
-      }
-
-      // inner darker cap core
-      fill(Math.max(2, this.color - 30), this.alpha * 0.95);
-      ellipse(0, capY - (this.size * 0.15), capBaseW * 0.62, capBaseW * 0.36);
-      // subtle top puff
-      fill(Math.max(6, this.color - 6), this.alpha * 0.7);
-      ellipse(0, capY - this.size * 1.05, capBaseW * 0.42, capBaseW * 0.22);
-    } else {
-      // normal diffused smoke (soft multi-layer)
-      rotate(this.rotation);
-      const layers = 5;
-      for (let i = layers; i >= 1; i--) {
-        const f = i / layers;
-        const s = this.size * (0.5 + 0.75 * f);
-        const a = this.alpha * (0.18 + 0.16 * f) * (1 - (i / (layers + 2)) * 0.12);
-        const shade = this.color + (layers - i) * 6;
-        fill(shade, a);
-        const ox = (noise(this.seed + i * 7, frameCount * 0.01) - 0.5) * 2.5;
-        const oy = (noise(this.seed - i * 13, frameCount * 0.01) - 0.5) * 2.5;
-        ellipse(ox, oy, s * (1 + 0.02 * i), s * (0.7 + 0.05 * f));
-      }
-    }
+    // layered ellipses for a soft smoke look
+    fill(this.color, this.alpha * 0.6);
+    ellipse(0, 0, this.size * 1.2, this.size);
+    fill(this.color + 20, this.alpha * 0.8);
+    ellipse(0, 0, this.size * 0.8, this.size * 0.7);
+    fill(this.color + 40, this.alpha);
+    ellipse(0, 0, this.size * 0.5, this.size * 0.5);
     pop();
   }
-  
+
   isDead() {
-    return this.life <= 0 || this.alpha <= 2 || this.size < 0.5;
+    return this.life <= 0;
   }
 }
 
@@ -190,8 +110,7 @@ class SceneSmokeParticle {
     this.intensity = intensity;
     this.life = Math.round(50 + random(30, 20) * intensity);
     this.baseLife = this.life;
-  // smaller initial size for scene smoke (reduced per user request)
-  this.size = random(6, 18) * intensity;
+    this.size = random(6, 18) * intensity;
     this.color = random(30, 100);
     this.alpha = map(this.life, 0, this.baseLife, 0, 160);
     this.vx = random(-0.10, 0.02);
@@ -205,12 +124,10 @@ class SceneSmokeParticle {
     this.vx += map(n1, 0, 1, -0.02, 0.02) * this.intensity;
     this.vy += map(n2, 0, 1, -0.01, 0.01) * this.intensity;
     this.x += this.vx;
-    this.y += this.vy * 0.6; // very slow rise
-    // subtle spread
+    this.y += this.vy * 0.6;
     this.vx *= 0.995;
     this.vy *= 0.997;
-  // slower/smaller growth so particles stay more compact
-  this.size = lerp(this.size, this.size * (1.04 + 0.25 * this.intensity), 0.008);
+    this.size = lerp(this.size, this.size * (1.04 + 0.25 * this.intensity), 0.008);
     this.life -= 0.6 + 0.4 * this.intensity;
     this.alpha = map(this.life, 0, this.baseLife, 0, 160);
   }
@@ -219,7 +136,6 @@ class SceneSmokeParticle {
     push();
     translate(this.x, this.y);
     noStroke();
-    // thin stem lower part
     const stemLen = Math.max(4, Math.floor(this.size * 0.18));
     for (let s = 0; s < stemLen; s++) {
       const f = s / Math.max(1, stemLen - 1);
@@ -231,7 +147,6 @@ class SceneSmokeParticle {
       ellipse(ox, yOff, sw, sw * 1.8);
     }
 
-    // stacked blobs with outer soft rings then darker core
     const blobCount = Math.max(3, Math.floor(this.size / 10));
     const spineHeight = this.size * (1.8 + 0.8 * this.intensity);
     for (let b = 0; b < blobCount; b++) {
@@ -239,7 +154,6 @@ class SceneSmokeParticle {
       const yOff = lerp(0, -spineHeight, t) + (noise(this.seed + b * 11, frameCount * 0.009) - 0.5) * 4.5;
       const blobBase = this.size * (0.6 + 1.4 * t) * (1 + 0.06 * noise(this.seed + b * 7));
       const layers = 5;
-      // outer -> inner
       for (let L = layers - 1; L >= 0; L--) {
         const lf = 1 - L / layers;
         const rad = blobBase * (0.6 + 0.9 * (L / layers)) * (1 + (noise(this.seed + L * 5 + b * 3, frameCount * 0.011) - 0.5) * 0.05);
@@ -251,7 +165,6 @@ class SceneSmokeParticle {
         const oy = (noise(this.seed - b * 9 + L * 6, frameCount * 0.008) - 0.5) * 3.5;
         ellipse(ox, yOff + oy, rad, rad * (0.78 + 0.12 * lf));
       }
-      // small darker core
       fill(Math.max(2, this.color - 26), this.alpha * 0.9);
       ellipse((noise(this.seed + b * 21, frameCount * 0.01) - 0.5) * 2, yOff + (noise(this.seed + b * 27, frameCount * 0.01) - 0.5) * 2, blobBase * 0.6, blobBase * 0.42);
     }
@@ -270,19 +183,18 @@ function addSceneSmoke(x, y, count = 1, intensity = 1) {
   }
 }
 
-// Fire + smoke mixed particle (small flames that transition to smoke)
 class FireSmokeParticle {
   constructor(x, y, intensity = 1) {
     this.x = x;
     this.y = y;
     this.seed = random(10000);
     this.intensity = intensity;
-    this.life = Math.round(30 + random(20, 40) * intensity); // shorter life (flame flicker)
+    this.life = Math.round(30 + random(20, 40) * intensity);
     this.baseLife = this.life;
     this.size = random(6, 22) * intensity;
     this.alpha = map(this.life, 0, this.baseLife, 0, 220);
     this.vx = random(-0.12, 0.12) * (1 + 0.2 * intensity);
-    this.vy = random(-0.6, -0.12) * (1 + 0.2 * intensity); // faster upward rise than smoke
+    this.vy = random(-0.6, -0.12) * (1 + 0.2 * intensity);
   }
 
   update() {
@@ -292,7 +204,6 @@ class FireSmokeParticle {
     this.vy += map(noise(this.seed + 12, t), 0, 1, -0.02, 0.02) * this.intensity;
     this.x += this.vx;
     this.y += this.vy;
-    // grow slightly then fade into smoke
     this.size = lerp(this.size, this.size * (1.05 + 0.5 * this.intensity), 0.06);
     this.life -= 0.9 + 0.4 * this.intensity;
     this.alpha = map(this.life, 0, this.baseLife, 0, 220);
@@ -302,16 +213,12 @@ class FireSmokeParticle {
     push();
     translate(this.x, this.y);
     noStroke();
-    // draw inner flame (yellow/orange)
     const lifeF = constrain(this.life / this.baseLife, 0, 1);
     const flameAlpha = this.alpha * (0.9 * lifeF);
-    // core
     fill(255, 220, 80, flameAlpha);
     ellipse(0, 0, this.size * 0.9, this.size * 0.6);
-    // mid flame
     fill(255, 120, 40, flameAlpha * 0.7);
     ellipse((noise(this.seed + 7, frameCount * 0.02) - 0.5) * 2, -this.size * 0.08, this.size * 1.2, this.size * 0.8);
-    // outer smoky ring (reddish -> gray as it ages)
     const smokeMix = lerpColor(color(220, 80, 20, flameAlpha * 0.4), color(120, 120, 120, flameAlpha * 0.6), 1 - lifeF);
     fill(smokeMix);
     ellipse(0, -this.size * 0.6, this.size * (1.6 + (1 - lifeF) * 1.6), this.size * (1.0 + (1 - lifeF) * 1.2));
@@ -360,134 +267,11 @@ function updateSceneSmoke() {
 }
 
 function displaySceneSmoke() {
-  // render behind other scene elements
   for (let p of sceneSmokeParticles) p.display();
   for (let p of sceneFireParticles) p.display();
 }
 
-// --- Cloud system (sky background) ---
-let clouds = [];
-
-class Cloud {
-  constructor(x, y, scale = 1, depth = 1) {
-    this.x = x;
-    this.y = y;
-    this.scale = scale; // overall size multiplier
-    this.depth = depth; // 0..1 smaller -> further back (fainter)
-    this.seed = random(10000);
-    this.speed = 0.12 * (0.6 + this.depth); // slow horizontal drift
-    this.puffs = [];
-    // number of puffs per cloud (3..6)
-    const count = Math.floor(random(3, 6 + 1));
-    this.elongation = random(1.35, 1.9);
-    for (let i = 0; i < count; i++) {
-      const rx = random(-30, 30) * (0.6 + 0.8 * (i / count));
-      const ry = random(-6, 6) * (0.6 + 0.6 * (i / count));
-      // reduced base radius to make clouds visually smaller
-      const baseR = random(16, 42) * this.scale * (0.7 + 0.6 * (1 - this.depth));
-      // store baseR so we can clamp growth later and avoid runaway sizes
-      this.puffs.push({ ox: rx, oy: ry, r: baseR, baseR: baseR, seed: random(10000), off: random(1000) });
-    }
-  }
-
-  update() {
-    // gentle horizontal drift with perlin wobble
-    const t = frameCount * 0.002 * (1 + this.depth * 0.6);
-    const n = noise(this.seed, t) - 0.5;
-    this.x += this.speed + n * 0.25 * (0.5 + this.depth * 0.6);
-    this.y += (noise(this.seed + 33, t) - 0.5) * 0.12;
-    // animate puffs slightly
-    for (let p of this.puffs) {
-      p.ox += (noise(p.seed, t * 0.8) - 0.5) * 0.4;
-      p.oy += (noise(p.seed + 44, t * 0.9) - 0.5) * 0.18;
-      // reduce the growth jitter and clamp radius relative to baseR so clouds do not grow too large
-      const delta = (noise(p.seed + 99, t * 0.6) - 0.5) * 0.28; // smaller jitter
-      p.r += delta;
-      // keep p.r within ~80% .. 118% of baseR to avoid runaway growth/shrink
-      if (typeof p.baseR === 'number') {
-        p.r = constrain(p.r, p.baseR * 0.8, p.baseR * 1.18);
-      }
-    }
-
-    // wrap-around horizontally
-    if (this.x - 300 > width) {
-      this.x = -random(120, 360);
-      this.y = random(30, height * 0.36);
-    }
-  }
-
-  display() {
-    push();
-    translate(this.x, this.y);
-    noStroke();
-    // light direction (approx top-left)
-    const lx = -0.5;
-    const ly = -0.45;
-    // Draw puffs with simple 3D shading: soft shadow below, outer soft shells, darker core and lighter highlight
-    for (let i = 0; i < this.puffs.length; i++) {
-      const p = this.puffs[i];
-      // baseAlpha in 0..255 range; apply global canvas cloud alpha multiplier to reduce overall opacity
-      const baseAlpha = 200 * (0.35 + 0.65 * this.scale) * (1 - this.depth * 0.5) * CANVAS_CLOUD_ALPHA;
-
-      // smoky, irregular-edge rendering: many small translucent 'cloudlets' around the puff
-      // core (slightly bright)
-      fill(245, Math.max(14, baseAlpha * 0.82));
-      ellipse(p.ox + lx * 1.2, p.oy + ly * 1.2, p.r * this.elongation, p.r * 0.6);
-
-      // irregular edge particles
-      const edgeParts = 22;
-      for (let k = 0; k < edgeParts; k++) {
-        // angle and radius modulated by perlin noise for smooth organic deformation
-        const ang = noise(p.seed + k * 13, frameCount * 0.006) * TWO_PI * 2.0;
-        const radial = p.r * (0.55 + noise(p.seed + k * 7, frameCount * 0.004) * 1.35);
-        const jitterX = (noise(p.off + k * 3, frameCount * 0.005) - 0.5) * 6.5;
-        const jitterY = (noise(p.off - k * 5, frameCount * 0.006) - 0.5) * 5.5;
-        const px = p.ox + Math.cos(ang) * radial + jitterX;
-        const py = p.oy + Math.sin(ang) * radial * 0.62 + jitterY;
-        const partSize = p.r * (0.10 + noise(p.seed + k * 19, frameCount * 0.008) * 0.55);
-        const partAlpha = Math.max(6, baseAlpha * (0.04 + 0.30 * noise(p.seed + k * 11, frameCount * 0.007)));
-        fill(255, partAlpha);
-        ellipse(px, py, partSize, partSize * 0.72);
-      }
-
-      // darker inner core (gives depth)
-      fill(220, Math.max(18, baseAlpha * 0.56));
-      ellipse(p.ox + lx * 2, p.oy + ly * 1.4, p.r * 0.54 * this.elongation, p.r * 0.38);
-
-      // soft top highlight
-      fill(255, Math.max(6, baseAlpha * 0.18));
-      ellipse(p.ox + lx * -2, p.oy + ly * -4, p.r * 0.36 * this.elongation, p.r * 0.24);
-    }
-    pop();
-  }
-}
-
-function createClouds(count = 3) {
-  clouds = [];
-  for (let i = 0; i < count; i++) {
-    const sx = random(-200, width + 200);
-    const sy = random(20, height * 0.36);
-    // slightly reduced overall scale range for a smaller cloud appearance
-    const sc = random(0.34, 0.66);
-    const depth = random(0.08, 0.55);
-    clouds.push(new Cloud(sx, sy, sc, depth));
-  }
-}
-
-function updateClouds() {
-  if (!clouds) return;
-  for (let c of clouds) c.update();
-}
-
-function displayClouds() {
-  if (!clouds) return;
-  // draw furthest clouds first (higher depth -> closer)
-  const sorted = clouds.slice().sort((a, b) => a.depth - b.depth);
-  for (let c of sorted) c.display();
-}
-
-// Sync DOM clouds removed — canvas clouds are used for the sky
-
+// Canvas clouds removed: background is provided via CSS `#scene` image and DOM clouds were removed.
 function updateSmoke() {
   // Atualiza e remove partículas mortas
   for (let i = smokeParticles.length - 1; i >= 0; i--) {
@@ -677,7 +461,6 @@ function setup() {
   // Duplicate the fire+smoke effect in the bottom-left corner
   addSceneEmitter(80, 340, 6, 0.6, 1, 'fire');
   addSceneEmitter(80, 340, 5, 0.5, 1, 'smoke');
-
 }
 
 function draw() {
@@ -689,12 +472,6 @@ function draw() {
   // Using CSS DOM clouds only (canvas cloud rendering removed)
 
   // Atualiza partículas de fumaça
-  // First update and render scene (background) smoke so it appears behind tanks
-  updateSceneEmitters();
-  updateSceneSmoke();
-  displaySceneSmoke();
-
-  // Then update generic smoke (explosions, debris, etc.) unchanged
   updateSmoke();
 
   // Tanque 1 invertido horizontalmente
@@ -1039,9 +816,6 @@ function draw() {
           if (vida[adversarioIdx] <= 0) {
             aguardandoRecomecar = true;
             setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
-            // Emissão adicional de fumaça intensa na destruição do tanque
-            // (mais partículas e maior intensidade para destaque)
-            addSmoke(adversarioTank.x, adversarioTank.y, 30, 2.6);
           } else {
             mudarTurno();
           }
