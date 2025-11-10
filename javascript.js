@@ -43,18 +43,18 @@ class SmokeParticle {
       this.vy = random(-0.15, -0.4); // slow upward motion
       this.size = random(28, 48) * (1 + intensity * 0.35);
       this.maxSize = this.size + random(40, 90);
-      this.baseLife = Math.round((180 + random(80, 160)) * intensity);
+      this.baseLife = Math.round((100 + random(80, 100)) * intensity);
       this.color = random(20, 50); // darker base for thick smoke
     } else {
       this.vx = random(-0.5, 0.5) * intensity;
       this.vy = random(-1, -2) * intensity; // sobe
       this.size = random(20, 40) * intensity;
       this.maxSize = this.size + random(30, 60);
-      this.baseLife = Math.round((120 + random(40, 120)) * intensity);
+      this.baseLife = Math.round((100 + random(40, 100)) * intensity);
       this.color = random(30, 85); // gray tones
     }
     this.life = this.baseLife;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 200);
+    this.alpha = map(this.life, 0, this.baseLife, 0, 100);
     this.rotation = random(TWO_PI);
     this.rotationSpeed = random(-0.03, 0.03);
     this.seed = random(10000);
