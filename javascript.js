@@ -36,45 +36,136 @@ class SmokeParticle {
   constructor(x, y, intensity = 1) {
     this.x = x;
     this.y = y;
-    this.vx = random(-0.5, 0.5) * intensity;
-    this.vy = random(-1, -2) * intensity; // sobe
-    this.size = random(20, 40) * intensity;
-    this.maxSize = this.size + random(30, 60);
-    this.alpha = random(100, 180);
-    this.life = 255;
-    this.color = random(40, 80); // tons de cinza escuro
+    // Pyramid/plume particles (for tank destruction) should rise slowly and spread outward
+    this.pyramid = (intensity >= 2.2);
+    if (this.pyramid) {
+      this.vx = random(-0.15, 0.15);
+      this.vy = random(-0.15, -0.4); // slow upward motion
+      this.size = random(28, 48) * (1 + intensity * 0.35);
+      this.maxSize = this.size + random(40, 90);
+      this.baseLife = Math.round((180 + random(80, 160)) * intensity);
+      this.color = random(20, 50); // darker base for thick smoke
+    } else {
+      this.vx = random(-0.5, 0.5) * intensity;
+      this.vy = random(-1, -2) * intensity; // sobe
+      this.size = random(20, 40) * intensity;
+      this.maxSize = this.size + random(30, 60);
+      this.baseLife = Math.round((120 + random(40, 120)) * intensity);
+      this.color = random(30, 85); // gray tones
+    }
+    this.life = this.baseLife;
+    this.alpha = map(this.life, 0, this.baseLife, 0, 200);
     this.rotation = random(TWO_PI);
-    this.rotationSpeed = random(-0.02, 0.02);
+    this.rotationSpeed = random(-0.03, 0.03);
+    this.seed = random(10000);
+    this.intensity = intensity;
   }
   
   update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vx += random(-0.1, 0.1); // movimento orgânico
-    this.vy *= 0.98; // desacelera
-    this.size = lerp(this.size, this.maxSize, 0.02);
-    this.life -= random(1, 3);
-    this.alpha = map(this.life, 0, 255, 0, 180);
-    this.rotation += this.rotationSpeed;
+    // time-based turbulence using Perlin noise for smooth organic motion
+    const t = frameCount * 0.008;
+    const n1 = noise(this.seed, t);
+    const n2 = noise(this.seed + 57.3, t * 1.2);
+    if (this.pyramid) {
+      // pyramid plume: encourage outward spread while keeping vertical rise slow
+      this.vx += map(n1, 0, 1, -0.12, 0.12) * (0.9 + 0.2 * this.intensity);
+      // tiny vertical wobble only
+      this.vy += map(n2, 0, 1, -0.02, 0.01);
+      // integrate
+      this.x += this.vx * (0.9 + 0.1 * this.intensity);
+      this.y += this.vy * (0.6); // slower upward motion
+      // gentle damping
+      this.vx *= 0.992;
+      this.vy *= 0.997;
+      // grow and diffuse slightly faster for dense plume base
+      this.size = lerp(this.size, this.maxSize, 0.035 + 0.006 * this.intensity);
+      this.life -= (0.6 + 0.8 * this.intensity);
+      this.alpha = map(this.life, 0, this.baseLife, 0, 220);
+      this.rotation += this.rotationSpeed * (0.5 + 0.3 * this.intensity);
+    } else {
+      // diffused smoke behavior
+      this.vx += map(n1, 0, 1, -0.25, 0.25) * this.intensity;
+      this.vy += map(n2, 0, 1, -0.06, 0.02) * this.intensity; // negative tends upward
+      // integrate
+      this.x += this.vx;
+      this.y += this.vy;
+      // apply gentle damping
+      this.vx *= 0.995;
+      this.vy *= 0.998;
+      // grow and diffuse
+      this.size = lerp(this.size, this.maxSize, 0.03 + 0.005 * this.intensity);
+      // life progression
+      this.life -= (0.8 + 0.6 * this.intensity);
+      this.alpha = map(this.life, 0, this.baseLife, 0, 200);
+      this.rotation += this.rotationSpeed * (0.8 + 0.4 * this.intensity);
+    }
   }
   
   display() {
     push();
     translate(this.x, this.y);
-    rotate(this.rotation);
     noStroke();
-    // Múltiplas camadas para profundidade
-    fill(this.color, this.alpha * 0.6);
-    ellipse(0, 0, this.size * 1.2, this.size);
-    fill(this.color + 20, this.alpha * 0.8);
-    ellipse(0, 0, this.size * 0.8, this.size * 0.7);
-    fill(this.color + 40, this.alpha);
-    ellipse(0, 0, this.size * 0.5, this.size * 0.5);
+    // If pyramid plume (now render mushroom-style cloud)
+    if (this.pyramid) {
+      // Parameters
+      const stemLayers = 6 + Math.floor(this.intensity * 2);
+      const capLayers = 5 + Math.floor(this.intensity * 2);
+      const stemW = this.size * (0.35 + 0.12 * this.intensity);
+      const stemStep = this.size * 0.28; // vertical spacing for stem
+      // Draw stem: narrow stacked ellipses, darker near base
+      for (let i = 0; i < stemLayers; i++) {
+        const f = i / stemLayers; // 0 bottom -> 1 top
+        const w = stemW * (1 - f * 0.35) * (1 + (noise(this.seed + i, frameCount * 0.01) - 0.5) * 0.08);
+        const h = w * 0.6;
+        const yOff = -i * stemStep;
+        const a = this.alpha * (0.6 - 0.35 * f);
+        const shade = Math.max(4, this.color - 22 + i * 1.8);
+        fill(shade, a);
+        const ox = (noise(this.seed + i * 7, frameCount * 0.012) - 0.5) * 2.5 * (1 - f);
+        ellipse(ox, yOff, w, h);
+      }
+
+      // Draw cap: large flattened ellipses with inner darker core and outer softer ring
+      const capBaseW = this.size * (2.2 + this.intensity * 0.9);
+      const capY = -stemLayers * stemStep + this.size * 0.6; // slightly overlap stem top
+      for (let j = 0; j < capLayers; j++) {
+        const fj = j / capLayers; // 0 bottom -> 1 top
+        const wj = capBaseW * (1 - fj * 0.35) * (1 + (noise(this.seed + 100 + j, frameCount * 0.006) - 0.5) * 0.12);
+        const hj = wj * (0.28 + 0.06 * (1 - fj));
+        const yj = capY - fj * (this.size * 0.9);
+        const aj = this.alpha * (0.9 - 0.7 * fj) * (0.95 - fj * 0.15);
+        const shadej = Math.max(4, this.color - 10 + j * 4);
+        fill(shadej, aj);
+        const oxj = (noise(this.seed + 200 + j, frameCount * 0.008) - 0.5) * 6 * (1 - fj);
+        ellipse(oxj, yj, wj, hj);
+      }
+
+      // inner darker cap core
+      fill(Math.max(2, this.color - 30), this.alpha * 0.95);
+      ellipse(0, capY - (this.size * 0.15), capBaseW * 0.62, capBaseW * 0.36);
+      // subtle top puff
+      fill(Math.max(6, this.color - 6), this.alpha * 0.7);
+      ellipse(0, capY - this.size * 1.05, capBaseW * 0.42, capBaseW * 0.22);
+    } else {
+      // normal diffused smoke (soft multi-layer)
+      rotate(this.rotation);
+      const layers = 5;
+      for (let i = layers; i >= 1; i--) {
+        const f = i / layers;
+        const s = this.size * (0.5 + 0.75 * f);
+        const a = this.alpha * (0.18 + 0.16 * f) * (1 - (i / (layers + 2)) * 0.12);
+        const shade = this.color + (layers - i) * 6;
+        fill(shade, a);
+        const ox = (noise(this.seed + i * 7, frameCount * 0.01) - 0.5) * 2.5;
+        const oy = (noise(this.seed - i * 13, frameCount * 0.01) - 0.5) * 2.5;
+        ellipse(ox, oy, s * (1 + 0.02 * i), s * (0.7 + 0.05 * f));
+      }
+    }
     pop();
   }
   
   isDead() {
-    return this.life <= 0;
+    return this.life <= 0 || this.alpha <= 2 || this.size < 0.5;
   }
 }
 
@@ -735,6 +826,9 @@ function draw() {
           if (vida[adversarioIdx] <= 0) {
             aguardandoRecomecar = true;
             setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
+            // Emissão adicional de fumaça intensa na destruição do tanque
+            // (mais partículas e maior intensidade para destaque)
+            addSmoke(adversarioTank.x, adversarioTank.y, 30, 2.6);
           } else {
             mudarTurno();
           }
