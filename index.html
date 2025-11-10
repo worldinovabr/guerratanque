@@ -38,6 +38,28 @@
     </div>
   <div id="turno" class="turno-texto"></div>
 
+    <!-- Scene container: background image + CSS clouds. p5 canvas will be placed inside this container (transparent) -->
+    <div id="scene" aria-hidden="false">
+      <div id="css-clouds" aria-hidden="true">
+        <div class="cloud cloud--one">
+          <span class="puff p1"></span>
+          <span class="puff p2"></span>
+          <span class="puff p3"></span>
+          <span class="puff p4"></span>
+        </div>
+        <div class="cloud cloud--two">
+          <span class="puff p1"></span>
+          <span class="puff p2"></span>
+          <span class="puff p3"></span>
+        </div>
+        <div class="cloud cloud--three">
+          <span class="puff p1"></span>
+          <span class="puff p2"></span>
+          <span class="puff p3"></span>
+          <span class="puff p4"></span>
+        </div>
+      </div>
+    </div>
   <div class="controls-container">
     <!-- Controles de Coordenadas -->
     <div class="coord-controls">
@@ -80,6 +102,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+  
     <script>
     // Exemplo de uso inicial (100% de vida)
     // A função atualizarBarraVida está definida no JS principal

@@ -27,6 +27,8 @@ let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
 const PLANE_SPEED_FACTOR = 1.3; // 1.0 = normal speed, <1 slower
+// Global multiplier to control canvas cloud opacity (1.0 = unchanged, <1 = more transparent)
+const CANVAS_CLOUD_ALPHA = 0.72;
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
@@ -50,7 +52,7 @@ class SmokeParticle {
       this.vy = random(-1, -2) * intensity; // sobe
       this.size = random(20, 40) * intensity;
       this.maxSize = this.size + random(30, 60);
-      this.baseLife = Math.round((100 + random(40, 100)) * intensity);
+      this.baseLife = Math.round((100 + random(40, 10)) * intensity);
       this.color = random(30, 85); // gray tones
     }
     this.life = this.baseLife;
@@ -177,6 +179,7 @@ function addSmoke(x, y, count = 1, intensity = 1) {
 
 // --- Scene (chimney) smoke system - separate from generic smoke ---
 let sceneSmokeParticles = [];
+let sceneFireParticles = [];
 let sceneEmitters = [];
 
 class SceneSmokeParticle {
@@ -187,7 +190,8 @@ class SceneSmokeParticle {
     this.intensity = intensity;
     this.life = Math.round(50 + random(30, 20) * intensity);
     this.baseLife = this.life;
-    this.size = random(8, 28) * intensity;
+  // smaller initial size for scene smoke (reduced per user request)
+  this.size = random(6, 18) * intensity;
     this.color = random(30, 100);
     this.alpha = map(this.life, 0, this.baseLife, 0, 160);
     this.vx = random(-0.10, 0.02);
@@ -205,7 +209,8 @@ class SceneSmokeParticle {
     // subtle spread
     this.vx *= 0.995;
     this.vy *= 0.997;
-    this.size = lerp(this.size, this.size * (1.1 + 0.5 * this.intensity), 0.012);
+  // slower/smaller growth so particles stay more compact
+  this.size = lerp(this.size, this.size * (1.04 + 0.25 * this.intensity), 0.008);
     this.life -= 0.6 + 0.4 * this.intensity;
     this.alpha = map(this.life, 0, this.baseLife, 0, 160);
   }
@@ -265,14 +270,79 @@ function addSceneSmoke(x, y, count = 1, intensity = 1) {
   }
 }
 
-function addSceneEmitter(x, y, rateFrames = 180, intensity = 1, count = 1) {
-  sceneEmitters.push({ x, y, rate: rateFrames, intensity, count, lastFrame: 0 });
+// Fire + smoke mixed particle (small flames that transition to smoke)
+class FireSmokeParticle {
+  constructor(x, y, intensity = 1) {
+    this.x = x;
+    this.y = y;
+    this.seed = random(10000);
+    this.intensity = intensity;
+    this.life = Math.round(30 + random(20, 40) * intensity); // shorter life (flame flicker)
+    this.baseLife = this.life;
+    this.size = random(6, 22) * intensity;
+    this.alpha = map(this.life, 0, this.baseLife, 0, 220);
+    this.vx = random(-0.12, 0.12) * (1 + 0.2 * intensity);
+    this.vy = random(-0.6, -0.12) * (1 + 0.2 * intensity); // faster upward rise than smoke
+  }
+
+  update() {
+    const t = frameCount * 0.01;
+    const n1 = noise(this.seed, t);
+    this.vx += map(n1, 0, 1, -0.02, 0.02) * this.intensity;
+    this.vy += map(noise(this.seed + 12, t), 0, 1, -0.02, 0.02) * this.intensity;
+    this.x += this.vx;
+    this.y += this.vy;
+    // grow slightly then fade into smoke
+    this.size = lerp(this.size, this.size * (1.05 + 0.5 * this.intensity), 0.06);
+    this.life -= 0.9 + 0.4 * this.intensity;
+    this.alpha = map(this.life, 0, this.baseLife, 0, 220);
+  }
+
+  display() {
+    push();
+    translate(this.x, this.y);
+    noStroke();
+    // draw inner flame (yellow/orange)
+    const lifeF = constrain(this.life / this.baseLife, 0, 1);
+    const flameAlpha = this.alpha * (0.9 * lifeF);
+    // core
+    fill(255, 220, 80, flameAlpha);
+    ellipse(0, 0, this.size * 0.9, this.size * 0.6);
+    // mid flame
+    fill(255, 120, 40, flameAlpha * 0.7);
+    ellipse((noise(this.seed + 7, frameCount * 0.02) - 0.5) * 2, -this.size * 0.08, this.size * 1.2, this.size * 0.8);
+    // outer smoky ring (reddish -> gray as it ages)
+    const smokeMix = lerpColor(color(220, 80, 20, flameAlpha * 0.4), color(120, 120, 120, flameAlpha * 0.6), 1 - lifeF);
+    fill(smokeMix);
+    ellipse(0, -this.size * 0.6, this.size * (1.6 + (1 - lifeF) * 1.6), this.size * (1.0 + (1 - lifeF) * 1.2));
+    pop();
+  }
+
+  isDead() {
+    return this.life <= 0 || this.alpha <= 2;
+  }
+}
+
+function addFireSmoke(x, y, count = 1, intensity = 1) {
+  for (let i = 0; i < count; i++) {
+    sceneFireParticles.push(new FireSmokeParticle(x + random(-6, 6), y + random(-3, 3), intensity));
+  }
+}
+
+function addSceneEmitter(x, y, rateFrames = 180, intensity = 1, count = 1, type = 'smoke') {
+  sceneEmitters.push({ x, y, rate: rateFrames, intensity, count, type, lastFrame: 0 });
 }
 
 function updateSceneEmitters() {
   for (let e of sceneEmitters) {
     if (frameCount - e.lastFrame >= e.rate) {
-      addSceneSmoke(e.x + random(-2,2), e.y + random(-1,1), e.count, e.intensity);
+      const ex = e.x + random(-2, 2);
+      const ey = e.y + random(-1, 1);
+      if (e.type === 'fire') {
+        addFireSmoke(ex, ey, e.count, e.intensity);
+      } else {
+        addSceneSmoke(ex, ey, e.count, e.intensity);
+      }
       e.lastFrame = frameCount;
     }
   }
@@ -283,12 +353,140 @@ function updateSceneSmoke() {
     sceneSmokeParticles[i].update();
     if (sceneSmokeParticles[i].isDead()) sceneSmokeParticles.splice(i, 1);
   }
+  for (let i = sceneFireParticles.length - 1; i >= 0; i--) {
+    sceneFireParticles[i].update();
+    if (sceneFireParticles[i].isDead()) sceneFireParticles.splice(i, 1);
+  }
 }
 
 function displaySceneSmoke() {
   // render behind other scene elements
   for (let p of sceneSmokeParticles) p.display();
+  for (let p of sceneFireParticles) p.display();
 }
+
+// --- Cloud system (sky background) ---
+let clouds = [];
+
+class Cloud {
+  constructor(x, y, scale = 1, depth = 1) {
+    this.x = x;
+    this.y = y;
+    this.scale = scale; // overall size multiplier
+    this.depth = depth; // 0..1 smaller -> further back (fainter)
+    this.seed = random(10000);
+    this.speed = 0.12 * (0.6 + this.depth); // slow horizontal drift
+    this.puffs = [];
+    // number of puffs per cloud (3..6)
+    const count = Math.floor(random(3, 6 + 1));
+    this.elongation = random(1.35, 1.9);
+    for (let i = 0; i < count; i++) {
+      const rx = random(-30, 30) * (0.6 + 0.8 * (i / count));
+      const ry = random(-6, 6) * (0.6 + 0.6 * (i / count));
+      // reduced base radius to make clouds visually smaller
+      const baseR = random(16, 42) * this.scale * (0.7 + 0.6 * (1 - this.depth));
+      // store baseR so we can clamp growth later and avoid runaway sizes
+      this.puffs.push({ ox: rx, oy: ry, r: baseR, baseR: baseR, seed: random(10000), off: random(1000) });
+    }
+  }
+
+  update() {
+    // gentle horizontal drift with perlin wobble
+    const t = frameCount * 0.002 * (1 + this.depth * 0.6);
+    const n = noise(this.seed, t) - 0.5;
+    this.x += this.speed + n * 0.25 * (0.5 + this.depth * 0.6);
+    this.y += (noise(this.seed + 33, t) - 0.5) * 0.12;
+    // animate puffs slightly
+    for (let p of this.puffs) {
+      p.ox += (noise(p.seed, t * 0.8) - 0.5) * 0.4;
+      p.oy += (noise(p.seed + 44, t * 0.9) - 0.5) * 0.18;
+      // reduce the growth jitter and clamp radius relative to baseR so clouds do not grow too large
+      const delta = (noise(p.seed + 99, t * 0.6) - 0.5) * 0.28; // smaller jitter
+      p.r += delta;
+      // keep p.r within ~80% .. 118% of baseR to avoid runaway growth/shrink
+      if (typeof p.baseR === 'number') {
+        p.r = constrain(p.r, p.baseR * 0.8, p.baseR * 1.18);
+      }
+    }
+
+    // wrap-around horizontally
+    if (this.x - 300 > width) {
+      this.x = -random(120, 360);
+      this.y = random(30, height * 0.36);
+    }
+  }
+
+  display() {
+    push();
+    translate(this.x, this.y);
+    noStroke();
+    // light direction (approx top-left)
+    const lx = -0.5;
+    const ly = -0.45;
+    // Draw puffs with simple 3D shading: soft shadow below, outer soft shells, darker core and lighter highlight
+    for (let i = 0; i < this.puffs.length; i++) {
+      const p = this.puffs[i];
+      // baseAlpha in 0..255 range; apply global canvas cloud alpha multiplier to reduce overall opacity
+      const baseAlpha = 200 * (0.35 + 0.65 * this.scale) * (1 - this.depth * 0.5) * CANVAS_CLOUD_ALPHA;
+
+      // smoky, irregular-edge rendering: many small translucent 'cloudlets' around the puff
+      // core (slightly bright)
+      fill(245, Math.max(14, baseAlpha * 0.82));
+      ellipse(p.ox + lx * 1.2, p.oy + ly * 1.2, p.r * this.elongation, p.r * 0.6);
+
+      // irregular edge particles
+      const edgeParts = 22;
+      for (let k = 0; k < edgeParts; k++) {
+        // angle and radius modulated by perlin noise for smooth organic deformation
+        const ang = noise(p.seed + k * 13, frameCount * 0.006) * TWO_PI * 2.0;
+        const radial = p.r * (0.55 + noise(p.seed + k * 7, frameCount * 0.004) * 1.35);
+        const jitterX = (noise(p.off + k * 3, frameCount * 0.005) - 0.5) * 6.5;
+        const jitterY = (noise(p.off - k * 5, frameCount * 0.006) - 0.5) * 5.5;
+        const px = p.ox + Math.cos(ang) * radial + jitterX;
+        const py = p.oy + Math.sin(ang) * radial * 0.62 + jitterY;
+        const partSize = p.r * (0.10 + noise(p.seed + k * 19, frameCount * 0.008) * 0.55);
+        const partAlpha = Math.max(6, baseAlpha * (0.04 + 0.30 * noise(p.seed + k * 11, frameCount * 0.007)));
+        fill(255, partAlpha);
+        ellipse(px, py, partSize, partSize * 0.72);
+      }
+
+      // darker inner core (gives depth)
+      fill(220, Math.max(18, baseAlpha * 0.56));
+      ellipse(p.ox + lx * 2, p.oy + ly * 1.4, p.r * 0.54 * this.elongation, p.r * 0.38);
+
+      // soft top highlight
+      fill(255, Math.max(6, baseAlpha * 0.18));
+      ellipse(p.ox + lx * -2, p.oy + ly * -4, p.r * 0.36 * this.elongation, p.r * 0.24);
+    }
+    pop();
+  }
+}
+
+function createClouds(count = 3) {
+  clouds = [];
+  for (let i = 0; i < count; i++) {
+    const sx = random(-200, width + 200);
+    const sy = random(20, height * 0.36);
+    // slightly reduced overall scale range for a smaller cloud appearance
+    const sc = random(0.34, 0.66);
+    const depth = random(0.08, 0.55);
+    clouds.push(new Cloud(sx, sy, sc, depth));
+  }
+}
+
+function updateClouds() {
+  if (!clouds) return;
+  for (let c of clouds) c.update();
+}
+
+function displayClouds() {
+  if (!clouds) return;
+  // draw furthest clouds first (higher depth -> closer)
+  const sorted = clouds.slice().sort((a, b) => a.depth - b.depth);
+  for (let c of sorted) c.display();
+}
+
+// Sync DOM clouds removed — canvas clouds are used for the sky
 
 function updateSmoke() {
   // Atualiza e remove partículas mortas
@@ -452,7 +650,9 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(800, 400);
+  // create a p5 canvas and parent it into the #scene container so DOM background + CSS clouds sit beneath
+  const cnv = createCanvas(800, 400);
+  try { cnv.parent('scene'); } catch (e) { /* if container not present, ignore */ }
   tanque1 = { x: 200, y: 315, w: 90, h: 135 };
   tanque2 = { x: 700, y: 315, w: 110, h: 135 };
   vida = [100, 100];
@@ -465,16 +665,29 @@ function setup() {
   // Add two fixed scene emitters (chimney-style) as requested
   // Coordinates are canvas-space and can be tuned later
   // Increased frequency: emit every 100 frames (approx every 1.6s at 60fps)
-  addSceneEmitter(300, 330, 10, 0.6, 1);
-  addSceneEmitter(620, 320, 5, 0.4, 1);
+  addSceneEmitter(300, 330, 3, 0.3, 0.7);
+  addSceneEmitter(620, 320, 2, 0.4, 0.9);
+  // Additional scene emitter added: another chimney-style smoke source at a different position
+  addSceneEmitter(440, 340, 2, 0.5, 1);
+  // New fire+smoke emitter (mixed flame that turns to smoke)
+  addSceneEmitter(520, 335, 6, 0.6, 1, 'fire');
+  // Also emit background smoke at the same position so fire is mixed with steady smoke
+  addSceneEmitter(520, 335, 5, 0.5, 1, 'smoke');
+
+  // Duplicate the fire+smoke effect in the bottom-left corner
+  addSceneEmitter(80, 340, 6, 0.6, 1, 'fire');
+  addSceneEmitter(80, 340, 5, 0.5, 1, 'smoke');
 
 }
 
 function draw() {
   tocarSomExplosaoSeNecessario();
-  background(30);
-  image(fundoImg, 0, 0, width, height);
+  // Make canvas transparent and allow DOM background (#scene) + #css-clouds to show through
+  clear();
   
+  // sky clouds (behind scene smoke)
+  // Using CSS DOM clouds only (canvas cloud rendering removed)
+
   // Atualiza partículas de fumaça
   // First update and render scene (background) smoke so it appears behind tanks
   updateSceneEmitters();
@@ -734,7 +947,7 @@ function draw() {
     if (typeof bombaImg !== 'undefined' && bombaImg) {
       // draw centered bomb image (approx 24x24)
       const bw = 35;
-      const bh = 40;
+      const bh = 10;
       image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
     } else {
       push();
