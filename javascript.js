@@ -987,5 +987,46 @@ if (typeof atualizarBarraVida !== 'function') {
   requestAnimationFrame(frame);
 })();
 
+// Ensure the game title is visible and positioned under the scoreboard across all viewports
+function positionGameTitle() {
+  try {
+    const title = document.getElementById('game-title');
+    if (!title) return;
+    const placar = document.querySelector('.placar-futebol');
+    let topPx = 90;
+    if (placar) {
+      const r = placar.getBoundingClientRect();
+      if (r && isFinite(r.bottom)) {
+        // small offset so the title sits just below the placar
+        topPx = Math.max(8, Math.round(r.bottom + 6));
+      }
+    }
+    // force fixed positioning so it's always visible regardless of layout changes
+    title.style.position = 'fixed';
+    title.style.left = '50%';
+    title.style.transform = 'translateX(-50%)';
+    title.style.top = topPx + 'px';
+    title.style.zIndex = '1001';
+    title.style.display = 'block';
+    title.style.pointerEvents = 'none';
+  } catch (e) {
+    // ignore positioning errors
+    console.warn('positionGameTitle error', e);
+  }
+}
+
+window.addEventListener('resize', positionGameTitle);
+window.addEventListener('orientationchange', positionGameTitle);
+window.addEventListener('load', () => {
+  positionGameTitle();
+  // re-run after a short delay to capture any late layout adjustments
+  setTimeout(positionGameTitle, 350);
+});
+
+// Run once immediately if DOM is already ready
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  setTimeout(positionGameTitle, 50);
+}
+
 
 
