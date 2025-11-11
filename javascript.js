@@ -1050,115 +1050,47 @@ if (typeof atualizarBarraVida !== 'function') {
       active._x += active._dir * active._speed * dt;
       active.style.left = active._x + 'px';
 
-      // Plane drop logic: occasionally drop a bomb aiming to the area between tanks
-      // Both directions can drop bombs
+      // Lógica de disparo aleatório
       try {
-        // always initialize nextDrop timer (don't require p5Ready) so mobiles get scheduled
-        if (!active._nextDrop) active._nextDrop = ts + 1200;
+        if (!active._nextDrop) active._nextDrop = ts + 1200 + Math.random() * 2000;
         if (ts >= active._nextDrop) {
-          const pr = (active.getBoundingClientRect && typeof active.getBoundingClientRect === 'function')
-            ? active.getBoundingClientRect()
-            : { left: active._x, top: planeTopY, width: parseFloat(active.style.width) || 48, height: 24 };
+          const pr = active.getBoundingClientRect();
           const canvas = document.querySelector('canvas');
-          const cr = canvas ? canvas.getBoundingClientRect() : null;
+          const cr = canvas.getBoundingClientRect();
 
-          // compute origin in canvas coordinates; fall back to viewport-to-canvas approximation when needed
-          let originX, originY;
-          // safe canvas size fallback variables (used when canvas rect is missing)
-          let canvasWUsed = (typeof width === 'number' && isFinite(width)) ? width : 800;
-          let canvasHUsed = (typeof height === 'number' && isFinite(height)) ? height : 400;
-          if (cr && cr.width > 2 && cr.height > 2 && typeof width === 'number' && typeof height === 'number') {
-            originX = ((pr.left - cr.left) / cr.width) * width + ((pr.width || 48) / 2) * (width / cr.width);
-            originY = ((pr.top - cr.top) / cr.height) * height + ((pr.height || 24) / 2) * (height / cr.height);
-          } else {
-            // fallback: map from viewport coords to p5 canvas size (approx)
-            const viewportX = (pr.left || 0) + ((pr.width || 48) / 2);
-            const viewportY = (pr.top || planeTopY) + ((pr.height || 24) / 2);
-            const vw = Math.max(window.innerWidth || 360, 360);
-            const vh = Math.max(window.innerHeight || 640, 240);
-            canvasWUsed = (typeof width === 'number' && isFinite(width)) ? width : 800;
-            canvasHUsed = (typeof height === 'number' && isFinite(height)) ? height : 400;
-            originX = (viewportX / vw) * canvasWUsed;
-            originY = (viewportY / vh) * canvasHUsed;
-            console.log('plane drop fallback mapping (no cr) viewport->canvas', Math.round(viewportX), Math.round(viewportY), '->', Math.round(originX), Math.round(originY));
-          }
+          const originX = ((pr.left - cr.left) / cr.width) * width + pr.width / 2;
+          const originY = ((pr.top - cr.top) / cr.height) * height + pr.height / 2;
 
-          // Choose ground Y (prefer tank y values if available)
-          const canvasH = (typeof height === 'number' && isFinite(height)) ? height : 400;
-          const groundY = (typeof tanque1 !== 'undefined' && isFinite(tanque1.y)) ? tanque1.y : (canvasH - 85);
-          const dyGround = groundY - originY;
-
-          // target a random x between tanks (use canvas coords if tanks in canvas space, else approximate)
-          let tanksMinX = 0, tanksMaxX = canvasWUsed || ((typeof width === 'number') ? width : 800);
-          if (typeof tanque1 !== 'undefined' && typeof tanque2 !== 'undefined' && isFinite(tanque1.x) && isFinite(tanque2.x)) {
-            tanksMinX = Math.min(tanque1.x, tanque2.x) - 40;
-            tanksMaxX = Math.max(tanque1.x, tanque2.x) + 40;
-          } else {
-            tanksMinX = canvasWUsed * 0.25;
-            tanksMaxX = canvasWUsed * 0.75;
-          }
-          const targetX = tanksMinX + Math.random() * (tanksMaxX - tanksMinX);
-
-          // physics: solve for landing time
-          // Use gentler gravity and slower initial downward velocity for plane bombs (slower, floatier fall)
-          const grav = 0.12; // reduced from 0.15
-          const initialVy = 0.5 + Math.random() * 0.6; // reduced initial downward speed (0.5-1.1)
-          const a = 0.10 * grav;
-          const b = initialVy;
-          const c = originY - groundY; // originY + vy*t + 0.5*g*t^2 = groundY -> 0.5*g*t^2 + vy*t + originY-groundY = 0
-          let tLand = null;
-          const disc = b * b - 4 * a * c;
-          if (isFinite(disc) && disc >= 0 && a !== 0) {
-            const sqrtD = Math.sqrt(disc);
-            const t1 = (-b + sqrtD) / (2 * a);
-            const t2 = (-b - sqrtD) / (2 * a);
-            const cand = [t1, t2].filter(t => isFinite(t) && t > 0.15);
-            if (cand.length) tLand = Math.min(...cand);
-          }
-          if (!tLand || !isFinite(tLand)) {
-            const dy = groundY - originY;
-            if (dy > 5) tLand = Math.sqrt((2 * dy) / grav);
-            else tLand = 0.010;
-          }
-          tLand = Math.max(0.2, Math.min(10, tLand));
+          const targetX = Math.random() * width;
+          const targetY = Math.random() * height;
 
           const dx = targetX - originX;
-          // reduce horizontal speed to make bombs fall slower horizontally as well
-          let vx = (dx / tLand) * 0.2; // slower horizontal velocity (60% of needed)
-          // clamp max horizontal speed to a lower value for bombs
-          const maxVx = Math.max(0.5, Math.abs(dx) * 0.2);
-          if (!isFinite(vx) || Math.abs(vx) > maxVx) vx = Math.sign(vx || 1) * maxVx;
+          const dy = targetY - originY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (isFinite(originX) && isFinite(originY) && isFinite(vx) && isFinite(initialVy)) {
-            console.log('plane drop ->', 'from', Math.round(originX), Math.round(originY), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
-            projeteis.push({ x: originX, y: originY, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
-          } else {
-            console.warn('plane drop aborted: invalid numbers', originX, originY, vx, initialVy);
-          }
+          const speed = 3; // Velocidade normal
+          const vx = (dx / distance) * speed;
+          const vy = (dy / distance) * speed;
 
-          active._nextDrop = ts + 1500 + Math.random() * 2000;
+          projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
+
+          active._nextDrop = ts + 1200 + Math.random() * 2000;
         }
       } catch (err) {
         console.warn('plane drop error', err);
       }
 
-      // Defensive shot handling removed from plane manager to avoid double-interception.
-      // Defense is handled in the projectile collision path so charges and blocking are deterministic.
-
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
-        // Salva HP antes de remover o avião
         const savedHp = active._hp;
-        const wasDamaged = (savedHp < active._maxHp);
+        const wasDamaged = savedHp < active._maxHp;
         console.log('Plane exited screen (dir=1), HP was:', savedHp);
-        
-        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = -1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
-        
-        // Restaura HP e aparência escura se estava danificado
+
         active._hp = savedHp;
         if (wasDamaged) {
           active.style.opacity = '0.6';
@@ -1166,19 +1098,16 @@ if (typeof atualizarBarraVida !== 'function') {
           console.log('Restored damaged appearance, HP:', active._hp);
         }
       } else if (active._dir === -1 && active._x <= -BUFFER) {
-        // Salva HP antes de remover o avião
         const savedHp = active._hp;
-        const wasDamaged = (savedHp < active._maxHp);
+        const wasDamaged = savedHp < active._maxHp;
         console.log('Plane exited screen (dir=-1), HP was:', savedHp);
-        
-        // remove HUD, remove and spawn opposite; randomize altitude for the next loop
+
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
         currentDir = 1;
         planeTopY = computeRandomTop();
         active = createPlane(currentDir);
-        
-        // Restaura HP e aparência escura se estava danificado
+
         active._hp = savedHp;
         if (wasDamaged) {
           active.style.opacity = '0.6';
