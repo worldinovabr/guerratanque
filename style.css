@@ -889,7 +889,8 @@ h1 {
 @media (max-width: 480px) {
   #game-title {
     top: calc(56px + 32px);
-    font-size: clamp(12px, 9.5vw, 30px);
+    font-size: 14px; /* fixed size on small/mobile screens per request */
+    line-height: 1;
     letter-spacing: 1.5px;
     padding: 2px 6px;
   }
