@@ -857,6 +857,44 @@ h1 {
   text-shadow: 1px 1px 2px #000;
 }
 
+/* Game title centered on screen */
+#game-title {
+  position: absolute; /* place relative to viewport, under the scoreboard */
+  top: 115px; /* moved up to sit closer under the .placar-futebol */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9; /* just under the scoreboard (which uses z-index:10) */
+  color: #ffdd33;
+  /* reduced further per request */
+  font-size: clamp(14px, 3.2vw, 18px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.85), 0 1px 0 rgba(255,255,255,0.05);
+  pointer-events: none;
+  mix-blend-mode: normal;
+  
+  padding: 2px 6px;
+}
+
+/* Adjust position for smaller screens where the placar may shrink/shift */
+@media (max-width: 900px) {
+  #game-title {
+    top: calc(60px + 40px); /* uses placar top plus estimated placar height */
+    font-size: clamp(12px, 6.0vw, 40px);
+    letter-spacing: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  #game-title {
+    top: calc(56px + 32px);
+    font-size: clamp(12px, 9.5vw, 30px);
+    letter-spacing: 1.5px;
+    padding: 2px 6px;
+  }
+}
+
 /* Canvas do jogo */
 canvas {
   border: 3px solid #fff;

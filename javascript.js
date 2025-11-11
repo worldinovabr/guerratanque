@@ -515,8 +515,8 @@ function draw() {
     // bomba: desenhe imagem quando disponível, senão use fallback óbvio
     if (typeof bombaImg !== 'undefined' && bombaImg) {
       // draw centered bomb image (approx 24x24)
-      const bw = 35;
-      const bh = 40;
+      const bw = 25;
+      const bh = 10;
       image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
     } else {
       push();
