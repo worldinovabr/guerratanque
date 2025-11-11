@@ -1,4 +1,3 @@
-
 let howlerSomTiro;
 
   
@@ -426,7 +425,7 @@ function draw() {
   if (vida[0] <= 0 || tanque1QuebradoTemp) {
     // Exibir o tanque quebrado sem inversão (apply offset)
     pop();
-    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 + ox0, tanque1.y - tanque1.h / 2 + oy0, tanque1.w, tanque1.h);
+    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 -20 + ox0, tanque1.y - tanque1.h / 2 -30 + oy0, tanque1.w, tanque1.h);
   } else {
     image(tanque1Img, -tanque1.w / 2, -tanque1.h / 2, tanque1.w, tanque1.h);
     pop();
@@ -441,7 +440,7 @@ function draw() {
     push();
     translate(tanque2.x + ox1, tanque2.y + oy1);
     scale(-1, 1);
-    image(tanque2QuebradoImg, -tanque2.w / 2, -tanque2.h / 2, tanque2.w, tanque2.h);
+    image(tanque2QuebradoImg, -tanque2.w / 2, -tanque2.h / 2 - 30, tanque2.w, tanque2.h); // Move image 20px up
     pop();
   } else {
     image(tanque2Img, tanque2.x - tanque2.w / 2 + ox1, tanque2.y - tanque2.h / 2 + oy1, tanque2.w, tanque2.h);
@@ -962,7 +961,7 @@ if (typeof atualizarBarraVida !== 'function') {
     el.style.pointerEvents = 'none';
     // Initialize X based on direction
     el._dir = dir;
-  el._speed = (180 + Math.min(220, window.innerWidth / 3)) * PLANE_SPEED_FACTOR;
+  el._speed = (150 + Math.min(150, window.innerWidth / 3)) * PLANE_SPEED_FACTOR;
     // Size adjustments: default width, smaller for dir === -1
     if (dir === 1) {
       el._x = -BUFFER;
