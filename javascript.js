@@ -954,7 +954,7 @@ if (typeof atualizarBarraVida !== 'function') {
       el._x = window.innerWidth + BUFFER;
       el.style.left = el._x + 'px';
       // make aviao1 smaller and flipped horizontally
-      el.style.width = '48px';
+      el.style.width = '58px';
       el.style.transform = 'translateY(-50%) scaleX(-1)';
     }
     document.body.appendChild(el);
