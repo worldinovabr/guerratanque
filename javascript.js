@@ -6,6 +6,12 @@ let tanque1Img, tanque2Img, fundoImg, explosionSprite, tanque1QuebradoImg, tanqu
 let bombaImg; // image for plane bombs (assets/bomba.png)
 let defesaImg; // image for plane defensive effect (assets/defesa.png)
 let tanque1, tanque2;
+// per-tank engine idle oscillation parameters (amp in px, freq in radians/frame, phase offset)
+let engineOsc = [
+  // further reduced amplitude for a subtler idle hum, frequency kept faster
+  { amp: 0.4, freq: 0.82, phase: 0 },
+  { amp: 0.3, freq: 0.72, phase: Math.PI * 0.5 }
+];
 let projeteis = [];
 let turno = 1;
 let placar = [0, 0];
@@ -408,28 +414,37 @@ function draw() {
 
   // (CSS corner fire will be positioned to match canvas; canvas-based fire removed)
 
-  // Tanque 1 invertido horizontalmente
+  // engine idle oscillation for tank1 (subtle constant hum)
+  const t = frameCount || 0;
+  const e0 = engineOsc[0] || { amp: 1.2, freq: 0.06, phase: 0 };
+  const ox0 = 0; // keep horizontal position steady
+  const oy0 = Math.sin(t * e0.freq + e0.phase) * e0.amp; // vertical-only oscillation
+
   push();
-  translate(tanque1.x, tanque1.y);
+  translate(tanque1.x + ox0, tanque1.y + oy0);
   scale(-1.3, 1);
   if (vida[0] <= 0 || tanque1QuebradoTemp) {
-    // Exibir o tanque quebrado sem inversão
+    // Exibir o tanque quebrado sem inversão (apply offset)
     pop();
-    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2, tanque1.y - tanque1.h / 2, tanque1.w, tanque1.h);
+    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 + ox0, tanque1.y - tanque1.h / 2 + oy0, tanque1.w, tanque1.h);
   } else {
     image(tanque1Img, -tanque1.w / 2, -tanque1.h / 2, tanque1.w, tanque1.h);
     pop();
   }
 
-  // Tanque 2: inverter apenas o quebrado
+  // engine idle oscillation for tank2
+  const e1 = engineOsc[1] || { amp: 1.2, freq: 0.06, phase: Math.PI * 0.5 };
+  const ox1 = 0; // no horizontal oscillation for engine hum
+  const oy1 = Math.sin(t * e1.freq + e1.phase) * e1.amp;
+
   if (vida[1] <= 0 || tanque2QuebradoTemp) {
     push();
-    translate(tanque2.x, tanque2.y);
+    translate(tanque2.x + ox1, tanque2.y + oy1);
     scale(-1, 1);
     image(tanque2QuebradoImg, -tanque2.w / 2, -tanque2.h / 2, tanque2.w, tanque2.h);
     pop();
   } else {
-    image(tanque2Img, tanque2.x - tanque2.w / 2, tanque2.y - tanque2.h / 2, tanque2.w, tanque2.h);
+    image(tanque2Img, tanque2.x - tanque2.w / 2 + ox1, tanque2.y - tanque2.h / 2 + oy1, tanque2.w, tanque2.h);
   }
 
   // Explosão: suporta animação por sprite (tanques/bombas) e modo estático com fade (acerto de avião)
@@ -845,7 +860,11 @@ function moverTanque(direcao) {
   let passo = 20 * direcao;
   ativo.x += passo;
   ativo.x = constrain(ativo.x, ativo.w / 2, width - ativo.w / 2);
+  // small movement done; engine idle effect remains constant (no transient shake)
 }
+
+// start a per-tank shake: idx = 0 or 1, mag in px, dur in frames
+// removed startTankShake: replaced by continuous engine oscillation (engineOsc)
 
 function mudarTurno() {
   turno = turno === 1 ? 2 : 1;
