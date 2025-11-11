@@ -105,14 +105,14 @@ function getGroundFireAnchor(index) {
 }
 
 class FireParticle {
-  constructor(x, y) {
+  constructor(x, y, scale = 1) {
     this.x = x + random(-6, 6);
     this.y = y + random(-4, 4);
     this.vx = random(-0.6, 0.6);
     this.vy = random(-1.2, -0.4);
-    // slightly smaller flames for a more subtle look
-    this.size = random(4, 12);
-    this.life = Math.floor(random(18, 38));
+    // slightly smaller flames for a more subtle look; allow per-emitter scaling
+    this.size = random(4, 12) * scale;
+    this.life = Math.floor(random(14, 30) * scale);
     this.age = 0;
     this.hue = random(20, 40); // warm hue range
   }
@@ -156,8 +156,12 @@ class GroundFire {
   constructor(x, y, opts = {}) {
     this.x = x;
     this.y = y;
-    this.rate = opts.rate || 3; // smoke spawn rate divisor
-    this.fireRate = opts.fireRate || 2; // frames per flame spawn
+    this.rate = opts.rate || 3; // smoke spawn rate divisor (higher = less smoke)
+    this.fireRate = opts.fireRate || 2; // frames per flame spawn (higher = less flames)
+    // per-emitter tuning
+    this.smokeCount = (typeof opts.smokeCount === 'number') ? opts.smokeCount : 1;
+    this.smokeIntensity = (typeof opts.smokeIntensity === 'number') ? opts.smokeIntensity : 0.55;
+    this.fireSizeScale = (typeof opts.fireSizeScale === 'number') ? opts.fireSizeScale : 1;
     this.tick = 0;
   }
 
@@ -165,12 +169,12 @@ class GroundFire {
     this.tick++;
     // spawn smoke every few frames
     if (this.tick % this.rate === 0) {
-      // Reduced smoke: spawn fewer particles with lower intensity to keep effect subtle on mobile
-      addSmoke(this.x + random(-6,6), this.y - 6 + random(-4,4), 1, 0.55);
+      // spawn smoke using emitter-specific count/intensity
+      addSmoke(this.x + random(-6,6), this.y - 6 + random(-4,4), Math.max(0, Math.floor(this.smokeCount)), this.smokeIntensity);
     }
     // spawn flames more frequently
     if (this.tick % this.fireRate === 0) {
-      fireParticles.push(new FireParticle(this.x + random(-6,6), this.y + random(-4,4)));
+      fireParticles.push(new FireParticle(this.x + random(-6,6), this.y + random(-4,4), this.fireSizeScale));
     }
   }
 }
@@ -375,6 +379,13 @@ function setup() {
     // create emitters at the anchor positions
     createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: 5, fireRate: 3 });
     createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: 5, fireRate: 3 });
+  // add a smaller emitter midway between the two tanks (less smoke & flames)
+  const midX = Math.round((tanque1.x + tanque2.x) / 2);
+  // pull the middle emitter a bit down (so smoke appears closer to ground)
+  const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 22 + 18);
+  setGroundFireAnchor(2, midX, midY);
+  // smaller, subtler middle emitter: less smoke and smaller flames
+  createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { rate: 10, fireRate: 8, smokeCount: 1, smokeIntensity: 0.35, fireSizeScale: 0.55 });
   } catch (e) {
     console.warn('Could not create ground fire emitters:', e);
   }
@@ -860,6 +871,14 @@ function recomecarJogo() {
   document.getElementById("p2score").textContent = placar[1];
   atualizarBarraVida('vida1', 100);
   atualizarBarraVida('vida2', 100);
+  // Reset coordinate UI to default starting values
+  try {
+    const cx = document.getElementById('coordX'); if (cx) cx.textContent = '400';
+    const cy = document.getElementById('coordY'); if (cy) cy.textContent = '90';
+    const pot = document.getElementById('potencia'); if (pot) pot.textContent = '30';
+  } catch (e) {
+    console.warn('Could not reset coord UI:', e);
+  }
   document.getElementById("turno").textContent = `Turno: Jogador 1`;
   document.getElementById('recomecar').style.display = 'none';
 }

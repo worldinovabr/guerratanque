@@ -31,6 +31,14 @@
         <img src="vida2.png" alt="Tanque Jogador 2" class="soldado-icone soldado-red">
       </span>
     </div>
+  <!-- Layered 3D clouds (lightweight DOM overlay) -->
+  <div class="scene-clouds" aria-hidden="true">
+    <div class="cloud c--lg depth-1"><div class="cloud-inner"></div></div>
+    <div class="cloud c--md depth-2"><div class="cloud-inner"></div></div>
+    <div class="cloud c--sm depth-3"><div class="cloud-inner"></div></div>
+    <div class="cloud c--sm2 depth-2"><div class="cloud-inner"></div></div>
+    <div class="cloud c--md2 depth-1"><div class="cloud-inner"></div></div>
+  </div>
   <div id="turno" class="turno-texto"></div>
 
   <div class="controls-container">
@@ -45,13 +53,13 @@
       <div class="coord-item">
         <label>Y</label>
         <button onclick="alterarValor('coordY', -10)">-</button>
-        <span id="coordY">300</span>
+        <span id="coordY">90</span>
         <button onclick="alterarValor('coordY', 10)">+</button>
       </div>
       <div class="coord-item">
         <label>Pot</label>
         <button onclick="alterarValor('potencia', -1)">-</button>
-        <span id="potencia">10</span>
+        <span id="potencia">30</span>
         <button onclick="alterarValor('potencia', 1)">+</button>
       </div>
     </div>
