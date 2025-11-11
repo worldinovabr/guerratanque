@@ -100,6 +100,8 @@ function displaySmoke() {
   }
 }
 
+// (Removed canvas-based ground fire emitter — using CSS 3D layer instead)
+
 // --- Plane HUD: show plane HP to the player ---
 function updatePlaneHUD(planeEl) {
   try {
@@ -265,6 +267,13 @@ function draw() {
   
   // Atualiza partículas de fumaça
   updateSmoke();
+
+  // Occasionally reposition the CSS corner-fire so it aligns with the canvas emitter
+  if (typeof positionCssCornerFire === 'function' && frameCount % 20 === 0) {
+    try { positionCssCornerFire(); } catch (e) { /* ignore */ }
+  }
+
+  // (CSS corner fire will be positioned to match canvas; canvas-based fire removed)
 
   // Tanque 1 invertido horizontalmente
   push();
@@ -1057,6 +1066,48 @@ window.addEventListener('load', () => {
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
   setTimeout(positionGameTitle, 50);
 }
+
+// Position the CSS corner-fire element to match the canvas emitter coordinates.
+function positionCssCornerFire() {
+  try {
+    const el = document.getElementById('css-corner-fire');
+    const canvas = document.querySelector('canvas');
+    if (!el || !canvas) return;
+    const cr = canvas.getBoundingClientRect();
+    if (!cr || cr.width < 2 || cr.height < 2) return;
+
+    // Compute the same canvas-space emitter coordinates used by the canvas emitter
+    const canvasWUsed = (typeof width === 'number' && isFinite(width)) ? width : 800;
+    const canvasHUsed = (typeof height === 'number' && isFinite(height)) ? height : 400;
+    const cx = Math.max(40, canvasWUsed * 0.06);
+    const cy = Math.max(40, canvasHUsed - 40);
+
+    // Map canvas coords to viewport pixels
+    const viewportX = cr.left + (cx / canvasWUsed) * cr.width;
+    const viewportY = cr.top + (cy / canvasHUsed) * cr.height;
+
+    // Center the DOM element on that point
+    const ow = el.offsetWidth || 160;
+    const oh = el.offsetHeight || 110;
+    let leftPx = Math.round(viewportX - ow / 2);
+    let topPx = Math.round(viewportY - oh / 2);
+
+    // Keep on-screen
+    leftPx = Math.max(6, Math.min(window.innerWidth - ow - 6, leftPx));
+    topPx = Math.max(6, Math.min(window.innerHeight - oh - 6, topPx));
+
+    el.style.left = leftPx + 'px';
+    el.style.top = topPx + 'px';
+    // remove bottom/right anchors so top/left take effect
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  } catch (e) {
+    // ignore positioning errors
+  }
+}
+
+window.addEventListener('resize', positionCssCornerFire);
+window.addEventListener('load', () => { setTimeout(positionCssCornerFire, 120); });
 
 
 
