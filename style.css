@@ -20,6 +20,18 @@
 @media (max-width: 480px) {
   canvas { 
     max-width: 88vw; 
+  #css-corner-fire {
+    position: fixed;
+    left: 28px;
+    bottom: 24px;
+    /* enlarged container so heavy billows can form like the reference photo */
+    width: 160px;
+    height: 140px;
+    pointer-events: none;
+    z-index: 1000;
+    transform-style: preserve-3d;
+    perspective: 700px;
+  }
     margin-top: 2.5vw; 
   }
   
@@ -34,6 +46,22 @@
   .btn-icone { 
     width: 40px; 
     height: 40px; 
+  }
+  .css-corner-fire .cf-smoke::before {
+    /* heavy base plume (very dark, wide) to match photo: always visible */
+    content: '';
+    position: absolute;
+    left: -20px;
+    bottom: 6px;
+    width: 260px; /* wide soft base */
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 40% 70%, rgba(20,20,20,0.95) 0%, rgba(50,50,50,0.88) 30%, rgba(80,80,80,0.7) 55%, rgba(0,0,0,0) 100%);
+    filter: blur(28px) saturate(0.9);
+    opacity: 0.9; /* strong base darkness */
+    pointer-events: none;
+    z-index: 0; /* behind wisps */
+    transform-origin: 50% 100%;
   }
   
   .vida-bar { 
@@ -50,9 +78,27 @@
     min-width: 30px;
   }
 
-  .action-buttons {
-    gap: 12px;
+  .css-corner-fire .cf-smoke .smoke {
+    position: absolute;
+    bottom: 18px;
+    left: 18%;
+    /* larger core smoke elements to create overlapping billows */
+    width: 72px;
+    height: 56px;
+    border-radius: 50%;
+    /* stronger darker core gradient */
+    background: radial-gradient(ellipse at 50% 40%, rgba(40,40,40,0.96) 0%, rgba(80,80,80,0.9) 28%, rgba(100,100,100,0.78) 50%, rgba(70,70,70,0.6) 75%, rgba(0,0,0,0) 100%);
+    filter: blur(10px) saturate(0.85) contrast(0.95);
+    opacity: 0;
+    /* multiple animations: slower rise for big billows + gentle sway */
+    animation: smoke-rise-1 9000ms linear infinite, smoke-sway 5600ms ease-in-out infinite;
   }
+  .action-buttons {
+  .css-corner-fire .cf-smoke .s1 { left: 8%; transform: translateZ(0px) scale(1.12); width:86px; height:66px; animation: smoke-rise-1 7600ms linear infinite, smoke-sway 5200ms ease-in-out infinite; }
+    gap: 12px;
+  .css-corner-fire .cf-smoke .s2 { left: 30%; width: 92px; height: 72px; transform: translateZ(8px) scale(1.08); animation: smoke-rise-2 8200ms linear infinite, smoke-sway 5600ms ease-in-out infinite; animation-delay: 420ms; }
+  }
+  .css-corner-fire .cf-smoke .s3 { left: 46%; width: 68px; height: 54px; transform: translateZ(16px) scale(1.02); animation: smoke-rise-3 7800ms linear infinite, smoke-sway 6000ms ease-in-out infinite; animation-delay: 760ms; }
 
   .action-buttons button {
     width: 50px;
@@ -392,6 +438,17 @@
     padding: 6px 14px !important;
     font-size: 0.95em !important;
     box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
+  }
+  /* Ajustes para o botão de recomeçar */
+  button#recomecar {
+    background-color: #ffcc00;
+    color: #222;
+    border: 3px solid #fff2;
+    box-shadow: 0 2px 8px #ffcc0088;
+  }
+  button#recomecar:hover {
+    background-color: #e6b800;
+    box-shadow: 0 4px 16px #ffcc00cc;
   }
 
   /* Canvas cobrindo toda a tela em paisagem */
@@ -1077,168 +1134,25 @@ button#tras:hover {
   box-shadow: 0 4px 16px #4488ffcc;
 }
 
-/* CSS 3D corner fire + smoke (performant, layered using transforms & opacity) */
-#css-corner-fire {
+/* CSS 3D corner fire + smoke removed per user request.
+   Removed selectors: #css-corner-fire, .css-corner-fire and related keyframes/pseudo-elements.
+   If you want to restore later, revert this section from version control. */
+
+/* Third corner fire: positioned to the right of the original corner-fire; same visual size */
+#css-corner-fire-3 {
   position: fixed;
-  left: 28px;
+  /* place just to the right of the original default left (28px) + container width (90px) + small gap */
+  left: calc(28px + 90px + 12px);
   bottom: 24px;
-  /* container size for flames + smoke (restored to reasonable size) */
-  width: 110px;
-  height: 78px;
+  width: 90px; /* same as #css-corner-fire */
+  height: 28px; /* same as #css-corner-fire */
   pointer-events: none;
   z-index: 1000;
   transform-style: preserve-3d;
   perspective: 700px;
 }
-.css-corner-fire .cf-layer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  transform-style: preserve-3d;
-}
 
-/* Flames group: multiple blended radial gradients with different speeds and depths */
-.css-corner-fire .flame {
-  position: absolute;
-  bottom: 6px;
-  left: 18%;
-  width: 40px;
-  height: 44px;
-  transform-origin: 50% 90%;
-  border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
-  mix-blend-mode: screen;
-  filter: blur(6px);
-  opacity: 0.95;
-}
-.css-corner-fire .flame.f1 {
-  left: 12%;
-  /* reduced flame sizes */
-  width: 30px;
-  height: 37px;
-  background: radial-gradient(ellipse at 50% 60%, rgba(255,235,175,0.95) 0%, rgba(255,160,50,0.9) 30%, rgba(200,60,40,0.75) 60%, rgba(0,0,0,0) 100%);
-  transform: translateZ(8px) rotateZ(-6deg) scale(0.85);
-  animation: flame-flicker 600ms infinite ease-in-out;
-}
-.css-corner-fire .flame.f2 {
-  left: 28%;
-  width: 29px;
-  height: 36px;
-  background: radial-gradient(ellipse at 50% 55%, rgba(255,210,120,0.9) 0%, rgba(255,120,30,0.85) 36%, rgba(180,40,30,0.7) 65%, rgba(0,0,0,0) 100%);
-  transform: translateZ(18px) rotateZ(6deg) scale(0.82);
-  filter: blur(3px) saturate(1.05);
-  animation: flame-flicker 480ms infinite ease-in-out reverse;
-}
-.css-corner-fire .flame.f3 {
-  left: 36%;
-  width: 31px;
-  height: 42px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(255,240,200,0.95) 0%, rgba(255,140,50,0.9) 40%, rgba(160,50,30,0.65) 70%, rgba(0,0,0,0) 100%);
-  transform: translateZ(30px) rotateZ(-2deg) scale(0.85);
-  filter: blur(2px) saturate(1.1);
-  animation: flame-flicker 420ms infinite ease-in-out;
-}
+/* Ensure children reuse the same .css-corner-fire rules (we rely on shared classes) */
 
-@keyframes flame-flicker {
-  0% { transform: translateZ(8px) scaleY(0.92) rotateZ(-3deg); opacity: 0.95; }
-  25% { transform: translateZ(18px) scaleY(1.05) rotateZ(2deg); opacity: 1; }
-  50% { transform: translateZ(22px) scaleY(0.98) rotateZ(-2deg); opacity: 0.92; }
-  75% { transform: translateZ(14px) scaleY(1.08) rotateZ(4deg); opacity: 0.98; }
-  100% { transform: translateZ(8px) scaleY(0.94) rotateZ(-3deg); opacity: 0.95; }
-}
-
-/* Smoke layers: rising, blurred, with 3D depth via translateZ */
-.css-corner-fire .cf-smoke .smoke {
-  position: absolute;
-  bottom: 18px;
-  left: 24%;
-  /* slightly larger core smoke for more density */
-  width: 44px;
-  height: 30px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 40%, rgba(170,170,170,0.98) 0%, rgba(120,120,120,0.9) 45%, rgba(70,70,70,0.55) 75%, rgba(0,0,0,0) 100%);
-  filter: blur(8px) saturate(0.6);
-  opacity: 0;
-  /* multiple animations: rise + gentle sway for realism */
-  animation: smoke-rise-1 4800ms linear infinite, smoke-sway 4200ms ease-in-out infinite;
-}
-.css-corner-fire .cf-smoke .smoke::before {
-  /* larger soft wisp behind the core smoke (bigger and more opaque for density) */
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: -10px;
-  width: 80px;
-  height: 56px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 40%, rgba(210,210,210,0.92) 0%, rgba(160,160,160,0.78) 40%, rgba(110,110,110,0.45) 70%, rgba(0,0,0,0) 100%);
-  filter: blur(14px) saturate(0.6);
-  opacity: 0.55;
-  transform-origin: 50% 100%;
-  animation: smoke-wisp 4800ms linear infinite;
-}
-.css-corner-fire .cf-smoke .smoke::after {
-  /* subtle top highlight for depth */
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: -12px;
-  width: 36px;
-  height: 24px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%);
-  filter: blur(6px);
-  opacity: 0.18;
-  animation: smoke-wisp 4800ms linear infinite;
-}
-.css-corner-fire .cf-smoke .s1 { left: 14%; transform: translateZ(0px) scale(1.05); width:48px; height:34px; animation: smoke-rise-1 4800ms linear infinite, smoke-sway 4200ms ease-in-out infinite; }
-.css-corner-fire .cf-smoke .s2 { left: 34%; width: 52px; height: 36px; transform: translateZ(8px) scale(1.05); animation: smoke-rise-2 5600ms linear infinite, smoke-sway 4600ms ease-in-out infinite; animation-delay: 400ms; }
-.css-corner-fire .cf-smoke .s3 { left: 46%; width: 40px; height: 28px; transform: translateZ(16px) scale(1.0); animation: smoke-rise-3 5200ms linear infinite, smoke-sway 5000ms ease-in-out infinite; animation-delay: 900ms; }
-
-@keyframes smoke-rise-1 {
-  0% { transform: translateY(0) translateZ(0px) scale(1.0); opacity: 0; }
-  12% { opacity: 0.72; }
-  60% { transform: translateY(-58px) translateZ(8px) scale(1.25); opacity: 0.6; }
-  100% { transform: translateY(-140px) translateZ(28px) scale(1.9); opacity: 0; }
-}
-@keyframes smoke-rise-2 {
-  0% { transform: translateY(0) translateZ(8px) scale(1.05); opacity: 0; }
-  10% { opacity: 0.62; }
-  60% { transform: translateY(-74px) translateZ(22px) scale(1.45); opacity: 0.52; }
-  100% { transform: translateY(-170px) translateZ(40px) scale(2.2); opacity: 0; }
-}
-@keyframes smoke-rise-3 {
-  0% { transform: translateY(0) translateZ(16px) scale(0.95); opacity: 0; }
-  14% { opacity: 0.58; }
-  60% { transform: translateY(-48px) translateZ(34px) scale(1.2); opacity: 0.48; }
-  100% { transform: translateY(-130px) translateZ(60px) scale(1.9); opacity: 0; }
-}
-
-/* gentle horizontal sway to mimic wind/turbulence */
-@keyframes smoke-sway {
-  0% { transform: translateX(0) rotate(0deg); }
-  25% { transform: translateX(-6px) rotate(-1deg); }
-  50% { transform: translateX(4px) rotate(0.5deg); }
-  75% { transform: translateX(-3px) rotate(-0.6deg); }
-  100% { transform: translateX(0) rotate(0deg); }
-}
-
-/* wisp animation drives opacity and slight rise for pseudo-elements */
-@keyframes smoke-wisp {
-  0% { opacity: 0; transform: translateY(0) scale(0.9); }
-  8% { opacity: 0.35; }
-  50% { opacity: 0.28; transform: translateY(-36px) scale(1.05); }
-  100% { opacity: 0; transform: translateY(-92px) scale(1.25); }
-}
-
-/* Make it subtle on very small screens */
-@media (max-width: 520px) {
-  #css-corner-fire { left: 12px; bottom: 18px; width: 110px; height: 84px; perspective: 520px; }
-  .css-corner-fire .flame.f1 { width: 56px; height: 74px; }
-  .css-corner-fire .flame.f2 { width: 44px; height: 62px; }
-  .css-corner-fire .flame.f3 { width: 36px; height: 48px; }
-  .css-corner-fire .cf-smoke .s1, .css-corner-fire .cf-smoke .s2, .css-corner-fire .cf-smoke .s3 { filter: blur(6px); }
-}
 
 

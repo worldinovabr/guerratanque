@@ -38,8 +38,9 @@ class SmokeParticle {
     this.y = y;
     this.vx = random(-0.5, 0.5) * intensity;
     this.vy = random(-1, -2) * intensity; // sobe
-    this.size = random(20, 40) * intensity;
-    this.maxSize = this.size + random(30, 60);
+    // reduced base sizes for subtler smoke
+    this.size = random(12, 28) * intensity;
+    this.maxSize = this.size + random(10, 30);
     this.alpha = random(100, 180);
     this.life = 255;
     this.color = random(40, 80); // tons de cinza escuro
@@ -81,6 +82,113 @@ class SmokeParticle {
 function addSmoke(x, y, count = 1, intensity = 1) {
   for (let i = 0; i < count; i++) {
     smokeParticles.push(new SmokeParticle(x + random(-10, 10), y + random(-5, 5), intensity));
+  }
+}
+
+// --- Canvas ground fire: short-lived flame particles + spawns smoke via addSmoke ---
+let fireParticles = [];
+let groundFires = [];
+// independent anchor positions for ground fire/smoke (so they don't track tanks)
+let groundFireAnchors = [];
+
+function setGroundFireAnchor(index, x, y) {
+  groundFireAnchors[index] = { x: x, y: y };
+  // if a GroundFire instance exists at this index, update its position immediately
+  if (groundFires[index]) {
+    groundFires[index].x = x;
+    groundFires[index].y = y;
+  }
+}
+
+function getGroundFireAnchor(index) {
+  return groundFireAnchors[index];
+}
+
+class FireParticle {
+  constructor(x, y) {
+    this.x = x + random(-6, 6);
+    this.y = y + random(-4, 4);
+    this.vx = random(-0.6, 0.6);
+    this.vy = random(-1.2, -0.4);
+    // slightly smaller flames for a more subtle look
+    this.size = random(4, 12);
+    this.life = Math.floor(random(18, 38));
+    this.age = 0;
+    this.hue = random(20, 40); // warm hue range
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    // gentle upward acceleration for flame
+    this.vy += 0.025;
+    // shrink a bit
+    this.size *= 0.98;
+    this.age++;
+  }
+
+  display() {
+    push();
+    translate(this.x, this.y);
+    noStroke();
+    // additive glow
+    blendMode(ADD);
+    const t = this.age / this.life;
+    // core
+    fill(255, 180, 40, map(1 - t, 0, 1, 0, 220));
+    ellipse(0, 0, this.size * 1.6, this.size);
+    // inner
+    fill(255, 110, 20, map(1 - t, 0, 1, 0, 180));
+    ellipse(0, 0, this.size, this.size * 0.7);
+    // tiny ember
+    fill(255, 220, 90, map(1 - t, 0, 1, 0, 120));
+    ellipse(random(-2,2), random(-2,2), max(1, this.size * 0.2));
+    blendMode(BLEND);
+    pop();
+  }
+
+  isDead() {
+    return this.age >= this.life || this.size < 0.6;
+  }
+}
+
+class GroundFire {
+  constructor(x, y, opts = {}) {
+    this.x = x;
+    this.y = y;
+    this.rate = opts.rate || 3; // smoke spawn rate divisor
+    this.fireRate = opts.fireRate || 2; // frames per flame spawn
+    this.tick = 0;
+  }
+
+  update() {
+    this.tick++;
+    // spawn smoke every few frames
+    if (this.tick % this.rate === 0) {
+      // Reduced smoke: spawn fewer particles with lower intensity to keep effect subtle on mobile
+      addSmoke(this.x + random(-6,6), this.y - 6 + random(-4,4), 1, 0.55);
+    }
+    // spawn flames more frequently
+    if (this.tick % this.fireRate === 0) {
+      fireParticles.push(new FireParticle(this.x + random(-6,6), this.y + random(-4,4)));
+    }
+  }
+}
+
+function createGroundFireAt(x, y, opts) {
+  groundFires.push(new GroundFire(x, y, opts));
+}
+
+function updateGroundFires() {
+  for (let g of groundFires) g.update();
+}
+
+function drawFireParticles() {
+  for (let i = fireParticles.length - 1; i >= 0; i--) {
+    const p = fireParticles[i];
+    p.update();
+    p.display();
+    if (p.isDead()) fireParticles.splice(i, 1);
   }
 }
 
@@ -249,7 +357,7 @@ function preload() {
 
 function setup() {
   createCanvas(800, 400);
-  tanque1 = { x: 200, y: 315, w: 90, h: 135 };
+  tanque1 = { x: 150, y: 315, w: 90, h: 135 };
   tanque2 = { x: 700, y: 315, w: 110, h: 135 };
   vida = [100, 100];
   setTimeout(() => {
@@ -258,6 +366,19 @@ function setup() {
   }, 100);
   p5Ready = true;
 
+  // Create gentle ground fire patches near each tank (canvas-based)
+  try {
+    // define independent anchors so we can move emitters without moving tanks
+  // move smoke a bit to the right without moving tanks: smaller left offset for tank1, larger right offset for tank2
+  setGroundFireAnchor(0, tanque1.x - 88, tanque1.y + 20);
+  setGroundFireAnchor(1, tanque2.x + 86, tanque2.y + 20);
+    // create emitters at the anchor positions
+    createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: 5, fireRate: 3 });
+    createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: 5, fireRate: 3 });
+  } catch (e) {
+    console.warn('Could not create ground fire emitters:', e);
+  }
+
 }
 
 function draw() {
@@ -265,13 +386,14 @@ function draw() {
   background(30);
   image(fundoImg, 0, 0, width, height);
   
-  // Atualiza partículas de fumaça
+  // Atualiza geradores de fogo no chão e partículas de fogo; depois atualiza fumaça
+  updateGroundFires();
+  drawFireParticles();
+  // Atualiza partículas de fumaça (remove mortas, as novas fumaças podem ter sido adicionadas acima)
   updateSmoke();
 
   // Occasionally reposition the CSS corner-fire so it aligns with the canvas emitter
-  if (typeof positionCssCornerFire === 'function' && frameCount % 20 === 0) {
-    try { positionCssCornerFire(); } catch (e) { /* ignore */ }
-  }
+  // (CSS corner-fire removed) no DOM positioning calls needed here
 
   // (CSS corner fire will be positioned to match canvas; canvas-based fire removed)
 
@@ -577,8 +699,11 @@ function draw() {
           explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 };
           explosaoTimer = 40;
           
-          // Adiciona fumaça da explosão de bomba
-          addSmoke((damagedIdx === 0 ? tanque1.x : tanque2.x), (damagedIdx === 0 ? tanque1.y : tanque2.y), 6, 1.3);
+          // Adiciona fumaça da explosão de bomba (use anchor se disponível, senão fallback para offset do tanque)
+          let anchor = groundFireAnchors[damagedIdx];
+          let smokeOffsetX = (anchor && isFinite(anchor.x)) ? anchor.x : ((damagedIdx === 0) ? (tanque1.x - 12) : (tanque2.x + 36));
+          let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
+          addSmoke(smokeOffsetX, smokeOffsetY, 6, 1.3);
           projeteis.splice(i, 1);
           if (damagedIdx === 0 && vida[damagedIdx] > 0) {
             tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000);
@@ -636,10 +761,16 @@ function draw() {
   
   // Fumaça contínua dos tanques destruídos
   if (vida[0] <= 0 && frameCount % 8 === 0) {
-    addSmoke(tanque1.x, tanque1.y - 20, 1, 0.8);
+    const a0 = groundFireAnchors[0];
+    const sx0 = (a0 && isFinite(a0.x)) ? a0.x : (tanque1.x - 24);
+    const sy0 = (a0 && isFinite(a0.y)) ? (a0.y - 20) : (tanque1.y - 20);
+    addSmoke(sx0, sy0, 1, 0.8);
   }
   if (vida[1] <= 0 && frameCount % 8 === 0) {
-    addSmoke(tanque2.x, tanque2.y - 20, 1, 0.8);
+    const a1 = groundFireAnchors[1];
+    const sx1 = (a1 && isFinite(a1.x)) ? a1.x : (tanque2.x + 24);
+    const sy1 = (a1 && isFinite(a1.y)) ? (a1.y - 20) : (tanque2.y - 20);
+    addSmoke(sx1, sy1, 1, 0.8);
   }
   
   // Renderiza todas as partículas de fumaça (atrás de tudo)
@@ -1067,47 +1198,7 @@ if (document.readyState === 'interactive' || document.readyState === 'complete')
   setTimeout(positionGameTitle, 50);
 }
 
-// Position the CSS corner-fire element to match the canvas emitter coordinates.
-function positionCssCornerFire() {
-  try {
-    const el = document.getElementById('css-corner-fire');
-    const canvas = document.querySelector('canvas');
-    if (!el || !canvas) return;
-    const cr = canvas.getBoundingClientRect();
-    if (!cr || cr.width < 2 || cr.height < 2) return;
-
-    // Compute the same canvas-space emitter coordinates used by the canvas emitter
-    const canvasWUsed = (typeof width === 'number' && isFinite(width)) ? width : 800;
-    const canvasHUsed = (typeof height === 'number' && isFinite(height)) ? height : 400;
-    const cx = Math.max(40, canvasWUsed * 0.06);
-    const cy = Math.max(40, canvasHUsed - 40);
-
-    // Map canvas coords to viewport pixels
-    const viewportX = cr.left + (cx / canvasWUsed) * cr.width;
-    const viewportY = cr.top + (cy / canvasHUsed) * cr.height;
-
-    // Center the DOM element on that point
-    const ow = el.offsetWidth || 160;
-    const oh = el.offsetHeight || 110;
-    let leftPx = Math.round(viewportX - ow / 2);
-    let topPx = Math.round(viewportY - oh / 2);
-
-    // Keep on-screen
-    leftPx = Math.max(6, Math.min(window.innerWidth - ow - 6, leftPx));
-    topPx = Math.max(6, Math.min(window.innerHeight - oh - 6, topPx));
-
-    el.style.left = leftPx + 'px';
-    el.style.top = topPx + 'px';
-    // remove bottom/right anchors so top/left take effect
-    el.style.right = 'auto';
-    el.style.bottom = 'auto';
-  } catch (e) {
-    // ignore positioning errors
-  }
-}
-
-window.addEventListener('resize', positionCssCornerFire);
-window.addEventListener('load', () => { setTimeout(positionCssCornerFire, 120); });
+// CSS corner-fire positioning helpers removed (DOM/CSS 3D effects were removed)
 
 
 
