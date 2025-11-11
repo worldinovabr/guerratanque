@@ -27,56 +27,43 @@ let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
 const PLANE_SPEED_FACTOR = 1.3; // 1.0 = normal speed, <1 slower
-// Global multiplier to control canvas cloud opacity (1.0 = unchanged, <1 = more transparent)
-const CANVAS_CLOUD_ALPHA = 0.72;
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
 // Sistema de fumaça realista
 let smokeParticles = [];
-
 class SmokeParticle {
   constructor(x, y, intensity = 1) {
     this.x = x;
     this.y = y;
-    this.pyramid = (intensity >= 2.2);
-    if (this.pyramid) {
-      this.vx = random(-0.15, 0.15);
-      this.vy = random(-0.15, -0.4);
-      this.size = random(28, 48) * (1 + intensity * 0.35);
-      this.maxSize = this.size + random(40, 90);
-      this.baseLife = Math.round((100 + random(80, 100)) * intensity);
-      this.color = random(20, 50);
-    } else {
-      this.vx = random(-0.5, 0.5) * intensity;
-      this.vy = random(-1, -2) * intensity;
-      this.size = random(20, 40) * intensity;
-      this.maxSize = this.size + random(30, 60);
-      this.baseLife = Math.round((100 + random(40, 100)) * intensity);
-      this.color = random(30, 85);
-    }
-    this.life = this.baseLife;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 100);
+    this.vx = random(-0.5, 0.5) * intensity;
+    this.vy = random(-1, -2) * intensity; // sobe
+    this.size = random(20, 40) * intensity;
+    this.maxSize = this.size + random(30, 60);
+    this.alpha = random(100, 180);
+    this.life = 255;
+    this.color = random(40, 80); // tons de cinza escuro
+    this.rotation = random(TWO_PI);
+    this.rotationSpeed = random(-0.02, 0.02);
   }
-
+  
   update() {
-    // basic upward drift with slight horizontal spread
     this.x += this.vx;
     this.y += this.vy;
-    // gentle slowdown of lateral movement
-    this.vx *= 0.998;
-    this.vy *= 0.997;
-    // grow slightly over time until maxSize
-    this.size = lerp(this.size, this.maxSize, 0.01);
-    this.life -= 0.6;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 100);
+    this.vx += random(-0.1, 0.1); // movimento orgânico
+    this.vy *= 0.98; // desacelera
+    this.size = lerp(this.size, this.maxSize, 0.02);
+    this.life -= random(1, 3);
+    this.alpha = map(this.life, 0, 255, 0, 180);
+    this.rotation += this.rotationSpeed;
   }
-
+  
   display() {
     push();
     translate(this.x, this.y);
+    rotate(this.rotation);
     noStroke();
-    // layered ellipses for a soft smoke look
+    // Múltiplas camadas para profundidade
     fill(this.color, this.alpha * 0.6);
     ellipse(0, 0, this.size * 1.2, this.size);
     fill(this.color + 20, this.alpha * 0.8);
@@ -85,7 +72,7 @@ class SmokeParticle {
     ellipse(0, 0, this.size * 0.5, this.size * 0.5);
     pop();
   }
-
+  
   isDead() {
     return this.life <= 0;
   }
@@ -97,181 +84,6 @@ function addSmoke(x, y, count = 1, intensity = 1) {
   }
 }
 
-// --- Scene (chimney) smoke system - separate from generic smoke ---
-let sceneSmokeParticles = [];
-let sceneFireParticles = [];
-let sceneEmitters = [];
-
-class SceneSmokeParticle {
-  constructor(x, y, intensity = 1) {
-    this.x = x;
-    this.y = y;
-    this.seed = random(10000);
-    this.intensity = intensity;
-    this.life = Math.round(50 + random(30, 20) * intensity);
-    this.baseLife = this.life;
-    this.size = random(6, 18) * intensity;
-    this.color = random(30, 100);
-    this.alpha = map(this.life, 0, this.baseLife, 0, 160);
-    this.vx = random(-0.10, 0.02);
-    this.vy = random(-0.18, -0.04);
-  }
-
-  update() {
-    const t = frameCount * 0.006;
-    const n1 = noise(this.seed, t);
-    const n2 = noise(this.seed + 47.1, t * 1.1);
-    this.vx += map(n1, 0, 1, -0.02, 0.02) * this.intensity;
-    this.vy += map(n2, 0, 1, -0.01, 0.01) * this.intensity;
-    this.x += this.vx;
-    this.y += this.vy * 0.6;
-    this.vx *= 0.995;
-    this.vy *= 0.997;
-    this.size = lerp(this.size, this.size * (1.04 + 0.25 * this.intensity), 0.008);
-    this.life -= 0.6 + 0.4 * this.intensity;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 160);
-  }
-
-  display() {
-    push();
-    translate(this.x, this.y);
-    noStroke();
-    const stemLen = Math.max(4, Math.floor(this.size * 0.18));
-    for (let s = 0; s < stemLen; s++) {
-      const f = s / Math.max(1, stemLen - 1);
-      const sw = this.size * (0.05 + 0.02 * (1 - f));
-      const yOff = s * 1.0;
-      const a = this.alpha * (0.08 * (1 - f));
-      fill(Math.max(6, this.color - 18), a);
-      const ox = (noise(this.seed + s * 3, frameCount * 0.008) - 0.5) * 1.6;
-      ellipse(ox, yOff, sw, sw * 1.8);
-    }
-
-    const blobCount = Math.max(3, Math.floor(this.size / 10));
-    const spineHeight = this.size * (1.8 + 0.8 * this.intensity);
-    for (let b = 0; b < blobCount; b++) {
-      const t = b / (blobCount - 1 || 1);
-      const yOff = lerp(0, -spineHeight, t) + (noise(this.seed + b * 11, frameCount * 0.009) - 0.5) * 4.5;
-      const blobBase = this.size * (0.6 + 1.4 * t) * (1 + 0.06 * noise(this.seed + b * 7));
-      const layers = 5;
-      for (let L = layers - 1; L >= 0; L--) {
-        const lf = 1 - L / layers;
-        const rad = blobBase * (0.6 + 0.9 * (L / layers)) * (1 + (noise(this.seed + L * 5 + b * 3, frameCount * 0.011) - 0.5) * 0.05);
-        const baseA = this.alpha * (0.14 + 0.7 * (1 - t));
-        const a = baseA * (0.2 + 0.95 * (1 - L / layers));
-        const shade = this.color + Math.round((b - blobCount / 2) * 2);
-        fill(Math.max(4, shade - Math.round(6 * (1 - L / layers))), a);
-        const ox = (noise(this.seed + b * 13 + L * 5, frameCount * 0.009) - 0.5) * (5 * (1 - t));
-        const oy = (noise(this.seed - b * 9 + L * 6, frameCount * 0.008) - 0.5) * 3.5;
-        ellipse(ox, yOff + oy, rad, rad * (0.78 + 0.12 * lf));
-      }
-      fill(Math.max(2, this.color - 26), this.alpha * 0.9);
-      ellipse((noise(this.seed + b * 21, frameCount * 0.01) - 0.5) * 2, yOff + (noise(this.seed + b * 27, frameCount * 0.01) - 0.5) * 2, blobBase * 0.6, blobBase * 0.42);
-    }
-
-    pop();
-  }
-
-  isDead() {
-    return this.life <= 0 || this.alpha <= 2;
-  }
-}
-
-function addSceneSmoke(x, y, count = 1, intensity = 1) {
-  for (let i = 0; i < count; i++) {
-    sceneSmokeParticles.push(new SceneSmokeParticle(x + random(-6, 6), y + random(-3, 3), intensity));
-  }
-}
-
-class FireSmokeParticle {
-  constructor(x, y, intensity = 1) {
-    this.x = x;
-    this.y = y;
-    this.seed = random(10000);
-    this.intensity = intensity;
-    this.life = Math.round(30 + random(20, 40) * intensity);
-    this.baseLife = this.life;
-    this.size = random(6, 22) * intensity;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 220);
-    this.vx = random(-0.12, 0.12) * (1 + 0.2 * intensity);
-    this.vy = random(-0.6, -0.12) * (1 + 0.2 * intensity);
-  }
-
-  update() {
-    const t = frameCount * 0.01;
-    const n1 = noise(this.seed, t);
-    this.vx += map(n1, 0, 1, -0.02, 0.02) * this.intensity;
-    this.vy += map(noise(this.seed + 12, t), 0, 1, -0.02, 0.02) * this.intensity;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.size = lerp(this.size, this.size * (1.05 + 0.5 * this.intensity), 0.06);
-    this.life -= 0.9 + 0.4 * this.intensity;
-    this.alpha = map(this.life, 0, this.baseLife, 0, 220);
-  }
-
-  display() {
-    push();
-    translate(this.x, this.y);
-    noStroke();
-    const lifeF = constrain(this.life / this.baseLife, 0, 1);
-    const flameAlpha = this.alpha * (0.9 * lifeF);
-    fill(255, 220, 80, flameAlpha);
-    ellipse(0, 0, this.size * 0.9, this.size * 0.6);
-    fill(255, 120, 40, flameAlpha * 0.7);
-    ellipse((noise(this.seed + 7, frameCount * 0.02) - 0.5) * 2, -this.size * 0.08, this.size * 1.2, this.size * 0.8);
-    const smokeMix = lerpColor(color(220, 80, 20, flameAlpha * 0.4), color(120, 120, 120, flameAlpha * 0.6), 1 - lifeF);
-    fill(smokeMix);
-    ellipse(0, -this.size * 0.6, this.size * (1.6 + (1 - lifeF) * 1.6), this.size * (1.0 + (1 - lifeF) * 1.2));
-    pop();
-  }
-
-  isDead() {
-    return this.life <= 0 || this.alpha <= 2;
-  }
-}
-
-function addFireSmoke(x, y, count = 1, intensity = 1) {
-  for (let i = 0; i < count; i++) {
-    sceneFireParticles.push(new FireSmokeParticle(x + random(-6, 6), y + random(-3, 3), intensity));
-  }
-}
-
-function addSceneEmitter(x, y, rateFrames = 180, intensity = 1, count = 1, type = 'smoke') {
-  sceneEmitters.push({ x, y, rate: rateFrames, intensity, count, type, lastFrame: 0 });
-}
-
-function updateSceneEmitters() {
-  for (let e of sceneEmitters) {
-    if (frameCount - e.lastFrame >= e.rate) {
-      const ex = e.x + random(-2, 2);
-      const ey = e.y + random(-1, 1);
-      if (e.type === 'fire') {
-        addFireSmoke(ex, ey, e.count, e.intensity);
-      } else {
-        addSceneSmoke(ex, ey, e.count, e.intensity);
-      }
-      e.lastFrame = frameCount;
-    }
-  }
-}
-
-function updateSceneSmoke() {
-  for (let i = sceneSmokeParticles.length - 1; i >= 0; i--) {
-    sceneSmokeParticles[i].update();
-    if (sceneSmokeParticles[i].isDead()) sceneSmokeParticles.splice(i, 1);
-  }
-  for (let i = sceneFireParticles.length - 1; i >= 0; i--) {
-    sceneFireParticles[i].update();
-    if (sceneFireParticles[i].isDead()) sceneFireParticles.splice(i, 1);
-  }
-}
-
-function displaySceneSmoke() {
-  for (let p of sceneSmokeParticles) p.display();
-  for (let p of sceneFireParticles) p.display();
-}
-
-// Canvas clouds removed: background is provided via CSS `#scene` image and DOM clouds were removed.
 function updateSmoke() {
   // Atualiza e remove partículas mortas
   for (let i = smokeParticles.length - 1; i >= 0; i--) {
@@ -434,9 +246,7 @@ function preload() {
 }
 
 function setup() {
-  // create a p5 canvas and parent it into the #scene container so DOM background + CSS clouds sit beneath
-  const cnv = createCanvas(800, 400);
-  try { cnv.parent('scene'); } catch (e) { /* if container not present, ignore */ }
+  createCanvas(800, 400);
   tanque1 = { x: 200, y: 315, w: 90, h: 135 };
   tanque2 = { x: 700, y: 315, w: 110, h: 135 };
   vida = [100, 100];
@@ -446,31 +256,13 @@ function setup() {
   }, 100);
   p5Ready = true;
 
-  // Add two fixed scene emitters (chimney-style) as requested
-  // Coordinates are canvas-space and can be tuned later
-  // Increased frequency: emit every 100 frames (approx every 1.6s at 60fps)
-  addSceneEmitter(300, 330, 3, 0.3, 0.7);
-  addSceneEmitter(620, 320, 2, 0.4, 0.9);
-  // Additional scene emitter added: another chimney-style smoke source at a different position
-  addSceneEmitter(440, 340, 2, 0.5, 1);
-  // New fire+smoke emitter (mixed flame that turns to smoke)
-  addSceneEmitter(520, 335, 6, 0.6, 1, 'fire');
-  // Also emit background smoke at the same position so fire is mixed with steady smoke
-  addSceneEmitter(520, 335, 5, 0.5, 1, 'smoke');
-
-  // Duplicate the fire+smoke effect in the bottom-left corner
-  addSceneEmitter(80, 340, 6, 0.6, 1, 'fire');
-  addSceneEmitter(80, 340, 5, 0.5, 1, 'smoke');
 }
 
 function draw() {
   tocarSomExplosaoSeNecessario();
-  // Make canvas transparent and allow DOM background (#scene) + #css-clouds to show through
-  clear();
+  background(30);
+  image(fundoImg, 0, 0, width, height);
   
-  // sky clouds (behind scene smoke)
-  // Using CSS DOM clouds only (canvas cloud rendering removed)
-
   // Atualiza partículas de fumaça
   updateSmoke();
 
@@ -724,7 +516,7 @@ function draw() {
     if (typeof bombaImg !== 'undefined' && bombaImg) {
       // draw centered bomb image (approx 24x24)
       const bw = 35;
-      const bh = 10;
+      const bh = 40;
       image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
     } else {
       push();
@@ -1087,64 +879,55 @@ if (typeof atualizarBarraVida !== 'function') {
   if (p5Ready && !active._nextDrop) active._nextDrop = ts + 2000; // start drops after 2s once p5 is ready
   if (p5Ready && ts >= active._nextDrop) {
           const canvas = document.querySelector('canvas');
-          // robust bounding rect + fallbacks so this works on mobile where sizes may be zero briefly
-          const pr = (active.getBoundingClientRect && typeof active.getBoundingClientRect === 'function')
-            ? active.getBoundingClientRect()
-            : { left: active._x || 0, top: planeTopY || 0, width: parseFloat(active.style.width) || 48, height: 24 };
+          const pr = active.getBoundingClientRect ? active.getBoundingClientRect() : { left: active._x, top: planeTopY, width: parseFloat(active.style.width) || 48, height: 24 };
+          // ensure p5 canvas and width/height are ready to avoid NaN coordinates
           if (!canvas) {
             console.log('plane drop skipped: canvas not found yet');
             active._nextDrop = ts + 500; // try again shortly
           } else {
             const cr = canvas.getBoundingClientRect();
-            // fallback sizes if bounding rect is zero (common during layout changes on mobile)
-            const crw = (cr && cr.width) || canvas.offsetWidth || canvas.clientWidth || 1;
-            const crh = (cr && cr.height) || canvas.offsetHeight || canvas.clientHeight || 1;
-            const canvasWidth = (typeof width === 'number' && isFinite(width)) ? width : crw;
-            const canvasHeight = (typeof height === 'number' && isFinite(height)) ? height : crh;
-            if (crw === 0 || crh === 0) {
-              console.log('plane drop skipped: canvas rect zero, using fallbacks', crw, crh);
+            if (typeof width !== 'number' || typeof height !== 'number' || cr.width === 0 || cr.height === 0) {
+              console.log('plane drop skipped: canvas/size not ready', 'width', width, 'height', height, 'cr', cr.width, cr.height);
               active._nextDrop = ts + 500;
             } else {
-              // compute plane center on canvas using safe fallbacks
-              const prWidth = pr.width || parseFloat(active.style.width) || 48;
-              const prHeight = pr.height || 24;
-              const originX = (((pr.left || (active._x || 0)) - cr.left) / crw) * canvasWidth + (prWidth / crw) * canvasWidth / 2;
-              const originY = (((pr.top || planeTopY || 0) - cr.top) / crh) * canvasHeight + (prHeight / crh) * canvasHeight / 2;
-              // clamp to canvas bounds to avoid NaN or offscreen values on mobile
-              const ox = Math.max(0, Math.min(canvasWidth, originX));
-              const oy = Math.max(0, Math.min(canvasHeight, originY));
+              const originX = ((pr.left - cr.left) / cr.width) * width + (pr.width / cr.width) * width / 2;
+              const originY = ((pr.top - cr.top) / cr.height) * height + (pr.height / cr.height) * height / 2;
               // Linha do solo (aprox da base dos tanques). Usamos y dos tanques (estão centrados).
-              const groundY = tanque1.y; // ambos tanques compartilham a mesma linha y (canvas coords)
-              const dyGround = groundY - oy;
+              const groundY = tanque1.y; // ambos tanques compartilham a mesma linha y
+              const dyGround = groundY - originY;
               // target a random x between tanks with some margin
               const tanksMinX = Math.min(tanque1.x, tanque2.x) - 40;
               const tanksMaxX = Math.max(tanque1.x, tanque2.x) + 40;
               const targetX = tanksMinX + Math.random() * (tanksMaxX - tanksMinX);
               // Física: y(t) = originY + vy*t + 0.5*g*t^2. Queremos y(t_landing) ~= groundY.
-              const grav = 0.15;
-              const initialVy = 1.0 + Math.random() * 0.8;
-              // quadratic: 0.5*g*t^2 + initialVy*t - dyGround = 0
-              const a = 0.5 * grav;
+              // Escolhemos g e vy inicial e resolvemos t. Para simplificar, vy inicial pequeno para queda quase vertical.
+              const grav = 0.15; // mesma gravidade que já usávamos
+              const initialVy = 1.0 + Math.random()*0.8; // leve velocidade inicial para baixo
+              // 0.5*g*t^2 + initialVy*t - dyGround = 0  (with dyGround = groundY-originY)
+              // a = 0.5*g, b = initialVy, c = -dyGround
+              const a = 0.2 * grav;
               const b = initialVy;
               const c = -dyGround;
               let tLand = 0;
-              const disc = b * b - 4 * a * c;
+              const disc = b*b - 4*a*c;
               if (disc >= 0) {
                 const sqrtD = Math.sqrt(disc);
-                const t1 = (-b + sqrtD) / (2 * a);
-                const t2 = (-b - sqrtD) / (2 * a);
+                const t1 = (-b + sqrtD) / (2*a);
+                const t2 = (-b - sqrtD) / (2*a);
+                // escolhe a raiz positiva maior (tempo futuro)
                 tLand = Math.max(t1, t2);
               }
-              if (!tLand || !isFinite(tLand) || tLand < 0.25) {
-                // fallback: simple free-fall estimate
-                tLand = Math.max(0.25, Math.sqrt((2 * Math.max(8, Math.abs(dyGround))) / grav));
+              if (!tLand || !isFinite(tLand) || tLand < 0.3) {
+                // fallback: estimativa simples se algo deu errado
+                tLand = Math.sqrt((2 * dyGround) / grav);
               }
-              const dx = targetX - ox;
+              // vx necessário para alcançar targetX em tLand
+              const dx = targetX - originX;
               const vx = dx / tLand;
-              console.log('plane drop ->', 'from', Math.round(ox), Math.round(oy), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
-              projeteis.push({ x: ox, y: oy, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
-              // schedule next drop; add a small random to avoid strict rhythm and adapt for mobile
-              active._nextDrop = ts + (1800 + Math.floor(Math.random() * 1000));
+              console.log('plane drop ->', 'from', Math.round(originX), Math.round(originY), 'toX≈', Math.round(targetX), 't', tLand.toFixed(2), 'vx', vx.toFixed(2), 'vy', initialVy.toFixed(2));
+              projeteis.push({ x: originX, y: originY, vx: vx, vy: initialVy, gravidade: grav, owner: 0 });
+              // schedule next drop in 2 seconds (2000 ms)
+              active._nextDrop = ts + 2000;
             }
           }
         }
