@@ -31,7 +31,7 @@ let howlerFundoMusical;
 let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
-const PLANE_SPEED_FACTOR = 1.3; // 1.0 = normal speed, <1 slower
+const PLANE_SPEED_FACTOR = 1; // 1.0 = normal speed, <1 slower
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
