@@ -282,9 +282,15 @@
   }
   
   .action-buttons button {
-    width: clamp(40px, 10vw, 60px);
-    height: clamp(40px, 10vw, 60px);
-    font-size: clamp(16px, 4vw, 22px);
+    width: clamp(35px, 8vw, 50px);
+    height: clamp(35px, 8vw, 50px);
+    font-size: clamp(14px, 3.5vw, 20px);
+    background: rgba(51, 51, 51, 0.4) !important;
+    border: 2px solid rgba(85, 85, 85, 0.5) !important;
+  }
+  
+  .action-buttons button:hover {
+    background: rgba(68, 68, 68, 0.5) !important;
   }
   .placar-futebol {
     left: unset !important;
@@ -536,9 +542,15 @@
   }
 
   .action-buttons button {
-    width: clamp(32px, 8vw, 44px) !important;
-    height: clamp(32px, 8vw, 44px) !important;
-    font-size: clamp(14px, 3.5vw, 18px) !important;
+    width: clamp(28px, 7vw, 38px) !important;
+    height: clamp(28px, 7vw, 38px) !important;
+    font-size: clamp(12px, 3vw, 16px) !important;
+    background: rgba(51, 51, 51, 0.4) !important;
+    border: 2px solid rgba(85, 85, 85, 0.5) !important;
+  }
+  
+  .action-buttons button:hover {
+    background: rgba(68, 68, 68, 0.5) !important;
   }
 
   .btn-icone {
@@ -605,6 +617,9 @@
   padding: 10px 20px;
   display: flex;
   gap: 50px;
+  transition: opacity 0.3s ease-in-out;
+  opacity: 1;
+}
   align-items: center;
   max-width: calc(100% - 24px);
   box-sizing: border-box;
@@ -1058,9 +1073,15 @@ canvas {
   }
 
   .action-buttons button {
-    width: clamp(28px, 6vw, 38px);
-    height: clamp(28px, 6vw, 38px);
-    font-size: clamp(12px, 3vw, 16px);
+    width: clamp(26px, 5.5vw, 35px);
+    height: clamp(26px, 5.5vw, 35px);
+    font-size: clamp(11px, 2.5vw, 15px);
+    background: rgba(51, 51, 51, 0.4) !important;
+    border: 2px solid rgba(85, 85, 85, 0.5) !important;
+  }
+  
+  .action-buttons button:hover {
+    background: rgba(68, 68, 68, 0.5) !important;
   }
 
   .btn-icone {
@@ -1454,8 +1475,14 @@ button#tras:hover {
     justify-content: center !important;
   }
   .controls-container.responsive-bottom .action-buttons button {
-    width: 42px !important;
-    height: 42px !important;
+    width: 38px !important;
+    height: 38px !important;
+    background: rgba(51, 51, 51, 0.4) !important;
+    border: 2px solid rgba(85, 85, 85, 0.5) !important;
+  }
+  
+  .controls-container.responsive-bottom .action-buttons button:hover {
+    background: rgba(68, 68, 68, 0.5) !important;
   }
 }
 

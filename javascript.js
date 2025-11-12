@@ -38,6 +38,9 @@ const PLANE_SPEED_FACTOR = 1; // 1.0 = normal speed, <1 slower
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
+// Controle de visibilidade dos botões
+let botoesVisiveis = true;
+
 // Sistema de fumaça realista
 let smokeParticles = [];
 class SmokeParticle {
@@ -900,6 +903,9 @@ function recomecarJogo() {
   }
   document.getElementById("turno").textContent = `Turno: Jogador 1`;
   document.getElementById('recomecar').style.display = 'none';
+  
+  // Resetar visibilidade dos botões
+  mostrarBotoes();
 }
 // Função para atualizar barras de vida com cache
 if (typeof atualizarBarraVida !== 'function') {
@@ -1177,6 +1183,52 @@ if (document.readyState === 'interactive' || document.readyState === 'complete')
 }
 
 // CSS corner-fire positioning helpers removed (DOM/CSS 3D effects were removed)
+
+// Funções para controlar visibilidade dos botões
+function ocultarBotoes() {
+  const controls = document.querySelector('.controls-container');
+  if (controls) {
+    controls.style.opacity = '0';
+    controls.style.pointerEvents = 'none';
+    botoesVisiveis = false;
+  }
+}
+
+function mostrarBotoes() {
+  const controls = document.querySelector('.controls-container');
+  if (controls) {
+    controls.style.opacity = '1';
+    controls.style.pointerEvents = 'auto';
+    botoesVisiveis = true;
+  }
+}
+
+// Adicionar eventos de duplo clique aos botões de controle e à tela
+window.addEventListener('load', function() {
+  // Duplo clique em qualquer lugar da tela para ocultar/mostrar
+  document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+    
+    if (botoesVisiveis) {
+      // Se os botões estão visíveis, oculta
+      ocultarBotoes();
+    } else {
+      // Se os botões estão ocultos, mostra
+      mostrarBotoes();
+    }
+  });
+  
+  // Prevenir que cliques nos botões propagam e causem duplo toggle
+  const allButtons = document.querySelectorAll('.controls-container button');
+  allButtons.forEach(button => {
+    button.addEventListener('dblclick', function(e) {
+      e.stopPropagation();
+    });
+  });
+});
+
+
+
 
 
 
