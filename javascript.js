@@ -41,7 +41,7 @@ let planeCounter = 0; // unique id for planes (kept for future use)
 // Sistema de fumaça realista
 let smokeParticles = [];
 class SmokeParticle {
-  constructor(x, y, intensity = 1) {
+  constructor(x, y, intensity = 1, colorBase = null) {
     this.x = x;
     this.y = y;
     this.vx = random(-0.5, 0.5) * intensity;
@@ -51,7 +51,7 @@ class SmokeParticle {
     this.maxSize = this.size + random(10, 30);
     this.alpha = random(100, 180);
     this.life = 255;
-    this.color = random(40, 80); // tons de cinza escuro
+    this.color = colorBase !== null ? colorBase : random(40, 80); // tons de cinza escuro ou cor customizada
     this.rotation = random(TWO_PI);
     this.rotationSpeed = random(-0.02, 0.02);
   }
@@ -87,9 +87,18 @@ class SmokeParticle {
   }
 }
 
-function addSmoke(x, y, count = 1, intensity = 1) {
+function addSmoke(x, y, count = 1, intensity = 1, colorBase = null) {
   for (let i = 0; i < count; i++) {
-    smokeParticles.push(new SmokeParticle(x + random(-10, 10), y + random(-5, 5), intensity));
+    smokeParticles.push(new SmokeParticle(x + random(-10, 10), y + random(-5, 5), intensity, colorBase));
+  }
+}
+
+// Fumaça branca para motores de tanques (misturada com fumaça escura)
+function addWhiteEngineSmoke(x, y, count = 1, intensity = 0.3) {
+  for (let i = 0; i < count; i++) {
+    // Mistura de fumaça branca e escura (30% branca, 70% escura)
+    let colorBase = random(100) < 30 ? random(200, 240) : random(60, 100);
+    smokeParticles.push(new SmokeParticle(x + random(-3, 3), y + random(-2, 2), intensity, colorBase));
   }
 }
 
@@ -494,6 +503,10 @@ function draw() {
   } else {
     image(tanque1Img, -tanque1.w / 2, -tanque1.h / 2, tanque1.w, tanque1.h);
     pop();
+    // Fumaça branca do motor do tanque 1 (traseira, saindo para cima)
+    if (frameCount % 12 === 0) {
+      addWhiteEngineSmoke(tanque1.x - tanque1.w * 0.35, tanque1.y - tanque1.h * 0.1, 1, 0.3);
+    }
   }
 
   // engine idle oscillation for tank2
@@ -509,6 +522,10 @@ function draw() {
     pop();
   } else {
     image(tanque2Img, tanque2.x - tanque2.w / 2 + ox1, tanque2.y - tanque2.h / 2 + oy1, tanque2.w, tanque2.h);
+    // Fumaça branca do motor do tanque 2 (traseira, saindo para cima)
+    if (frameCount % 12 === 0) {
+      addWhiteEngineSmoke(tanque2.x + tanque2.w * 0.35, tanque2.y - tanque2.h * 0.1, 1, 0.3);
+    }
   }
 
   // Explosão: suporta animação por sprite (tanques/bombas) e modo estático com fade (acerto de avião)
