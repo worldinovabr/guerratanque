@@ -1067,11 +1067,13 @@ if (typeof atualizarBarraVida !== 'function') {
 
       // Lógica de disparo a cada 3 segundos
       try {
-        if (!active._nextDrop) active._nextDrop = ts + 3000; // Define o intervalo de 3 segundos
-        if (ts >= active._nextDrop) {
+  // schedule the first drop and subsequent drops at a random interval (800ms..5000ms)
+  if (!active._nextDrop) active._nextDrop = ts + (800 + Math.random() * 4200);
+  if (ts >= active._nextDrop) {
           const pr = active.getBoundingClientRect();
           const canvas = document.querySelector('canvas');
-          const cr = canvas.getBoundingClientRect();
+          // if canvas isn't available yet (race on load), provide a safe fallback
+          const cr = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
 
           const originX = ((pr.left - cr.left) / cr.width) * width + pr.width / 2;
           const originY = ((pr.top - cr.top) / cr.height) * height + pr.height / 2;
@@ -1089,7 +1091,8 @@ if (typeof atualizarBarraVida !== 'function') {
 
           projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
 
-          active._nextDrop = ts + 3000; // Reagenda o próximo disparo para daqui a 3 segundos
+          // Reagenda o próximo disparo para um tempo aleatório entre ~800ms e ~5s
+          active._nextDrop = ts + (800 + Math.random() * 4200);
         }
       } catch (err) {
         console.warn('plane drop error', err);
