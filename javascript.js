@@ -239,7 +239,6 @@ function removePlaneHUD() {
 }
 
 
-// Inicializa o som da explosão, música de fundo e som do tiro com Howler.js após o carregamento da página
 window.addEventListener('DOMContentLoaded', function() {
   howlerExplosao = new Howl({ src: ['explosao.mp3'], volume: 0.5 });
   howlerFundoMusical = new Howl({ src: ['fundomusical.mp3'], volume: 0.7, loop: true });
@@ -1078,9 +1077,9 @@ if (typeof atualizarBarraVida !== 'function') {
       active._x += active._dir * active._speed * dt;
       active.style.left = active._x + 'px';
 
-      // Lógica de disparo aleatório
+      // Lógica de disparo a cada 3 segundos
       try {
-        if (!active._nextDrop) active._nextDrop = ts + 1200 + Math.random() * 2000;
+        if (!active._nextDrop) active._nextDrop = ts + 3000; // Define o intervalo de 3 segundos
         if (ts >= active._nextDrop) {
           const pr = active.getBoundingClientRect();
           const canvas = document.querySelector('canvas');
@@ -1102,7 +1101,7 @@ if (typeof atualizarBarraVida !== 'function') {
 
           projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
 
-          active._nextDrop = ts + 1200 + Math.random() * 2000;
+          active._nextDrop = ts + 3000; // Reagenda o próximo disparo para daqui a 3 segundos
         }
       } catch (err) {
         console.warn('plane drop error', err);
