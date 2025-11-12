@@ -364,7 +364,10 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(800, 400);
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+
+  createCanvas(800, 400); // Mantém o tamanho da tela
+
   tanque1 = { x: 150, y: 315, w: 90, h: 135 };
   tanque2 = { x: 700, y: 315, w: 110, h: 135 };
   vida = [100, 100];
@@ -374,26 +377,18 @@ function setup() {
   }, 100);
   p5Ready = true;
 
-  // Create gentle ground fire patches near each tank (canvas-based)
   try {
-    // define independent anchors so we can move emitters without moving tanks
-  // move smoke a bit to the right without moving tanks: smaller left offset for tank1, larger right offset for tank2
-  setGroundFireAnchor(0, tanque1.x - 88, tanque1.y + 20);
-  setGroundFireAnchor(1, tanque2.x + 86, tanque2.y + 20);
-    // create emitters at the anchor positions
-    createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: 5, fireRate: 3 });
-    createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: 5, fireRate: 3 });
-  // add a smaller emitter midway between the two tanks (less smoke & flames)
-  const midX = Math.round((tanque1.x + tanque2.x) / 2);
-  // pull the middle emitter a bit down (so smoke appears closer to ground)
-  const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 22 + 18);
-  setGroundFireAnchor(2, midX, midY);
-  // smaller, subtler middle emitter: less smoke and smaller flames
-  createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { rate: 10, fireRate: 8, smokeCount: 1, smokeIntensity: 0.35, fireSizeScale: 0.55 });
+    setGroundFireAnchor(0, tanque1.x - 88, tanque1.y + 20);
+    setGroundFireAnchor(1, tanque2.x + 86, tanque2.y + 20);
+    createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
+    createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
+    const midX = Math.round((tanque1.x + tanque2.x) / 2);
+    const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 22 + 18);
+    setGroundFireAnchor(2, midX, midY);
+    createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { rate: isMobile ? 12 : 10, fireRate: isMobile ? 10 : 8, smokeCount: 1, smokeIntensity: isMobile ? 0.25 : 0.35, fireSizeScale: isMobile ? 0.45 : 0.55 });
   } catch (e) {
     console.warn('Could not create ground fire emitters:', e);
   }
-
 }
 
 function updateClouds() {
@@ -419,10 +414,13 @@ function updateClouds() {
 
 function draw() {
   try {
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+    const frameSkip = isMobile ? 2 : 1; // Pula frames em dispositivos móveis para melhorar o desempenho
+    if (frameCount % frameSkip !== 0) return;
+
     tocarSomExplosaoSeNecessario();
     background(30);
     image(fundoImg, 0, 0, width, height);
-    updateClouds();
     updateGameLogic();
     displaySmoke();
   } catch (error) {
