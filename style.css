@@ -585,18 +585,20 @@
 
 /* Container principal dos controles */
 .controls-container {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: 190px;
+  bottom: 12px;
   transform: translateX(-50%);
-  z-index: 10;
-  background: rgba(34,34,34,0.18);
+  z-index: 1100;
+  background: rgba(20,20,20,0.75);
   border-radius: 10px;
-  box-shadow: 0 2px 12px #000a;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.65);
   padding: 10px 24px;
   display: flex;
   gap: 30px;
   align-items: center;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
 }
 
 /* Controles de coordenadas */
@@ -1307,6 +1309,133 @@ button#tras:hover {
 @media (max-width: 480px) {
   .scene-clouds { display: none; } /* hide on very small devices for performance */
 }
+
+/* ======================================================================
+   New responsive helper: keep game controls fixed at the bottom of viewport
+   without modifying existing configuration classes. Apply by adding
+   the class `responsive-bottom` to the `.controls-container` element.
+   This preserves all existing styles and only provides an extra override
+   to pin the controls to the bottom and reduce obstruction of the canvas.
+   ====================================================================== */
+
+/* default: pin controls to bottom (desktop + mobile). Keep it unobtrusive */
+.controls-container.responsive-bottom {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 14px !important;            /* small gap from bottom edge */
+  transform: translateX(-50%) !important;
+  width: auto !important;              /* auto width for desktop */
+  max-width: 900px !important;         /* prevent too wide on large screens */
+  margin: 0 auto !important;
+  border-radius: 12px !important;
+  background: rgba(20,20,20,0.72) !important; /* slightly darker translucent card */
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6) !important;
+  padding: 12px 20px !important;
+  z-index: 1100 !important; /* above canvas and other UI layers */
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* Make coordinate controls more compact inside the fixed bottom bar */
+.controls-container.responsive-bottom .coord-controls {
+  max-width: 640px !important;
+  width: auto !important;
+  display: flex !important;
+  gap: 10px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: nowrap !important;
+}
+
+.controls-container.responsive-bottom .coord-item {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 6px !important;
+  min-width: 48px !important;
+}
+
+.controls-container.responsive-bottom .coord-item label {
+  font-size: 12px !important;
+  color: #ffcc00 !important;
+  min-width: 18px !important;
+}
+
+.controls-container.responsive-bottom .coord-item span {
+  font-size: 14px !important;
+  min-width: 38px !important;
+  padding: 3px 6px !important;
+}
+
+.controls-container.responsive-bottom .coord-item button {
+  width: 26px !important;
+  height: 26px !important;
+  font-size: 14px !important;
+}
+
+/* Action buttons grouped next to coordinates inside the bottom bar */
+.controls-container.responsive-bottom .action-buttons {
+  margin-left: 12px !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.controls-container.responsive-bottom .action-buttons button {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+/* Medium screens: adjust spacing */
+@media (max-width: 900px) {
+  .controls-container.responsive-bottom {
+    width: calc(100% - 16px) !important;
+    padding: 10px !important;
+    bottom: 10px !important;
+  }
+  .controls-container.responsive-bottom .coord-controls {
+    gap: 8px !important;
+  }
+  .controls-container.responsive-bottom .action-buttons {
+    gap: 8px !important;
+  }
+}
+
+/* Smaller screens: stack controls but keep pinned to bottom */
+@media (max-width: 520px) {
+  .controls-container.responsive-bottom {
+    flex-direction: column !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    width: calc(100% - 12px) !important;
+    bottom: 8px !important;
+  }
+  .controls-container.responsive-bottom .coord-controls {
+    width: 100% !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .controls-container.responsive-bottom .action-buttons {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .controls-container.responsive-bottom .action-buttons button {
+    width: 42px !important;
+    height: 42px !important;
+  }
+}
+
+/* When the user (or JS) wants controls to be less obtrusive, allow a
+   modifier to make them semi-compact (optional: keep but not enabled). */
+.controls-container.responsive-bottom.compact {
+  padding: 6px 8px !important;
+  background: rgba(10,10,10,0.55) !important;
+}
+
 
 
 

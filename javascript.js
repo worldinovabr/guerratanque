@@ -454,41 +454,10 @@ function setup() {
   }
 }
 
-function updateClouds() {
-  const canvasWidth = width;
-  const canvasHeight = height;
-  const cloudStartX = -20; // Diminui ainda mais o início das nuvens
-  const cloudEndX = canvasWidth + 20; // Diminui ainda mais o fim das nuvens
-
-  document.querySelectorAll('.cloud').forEach(cloud => {
-    const depth = parseInt(cloud.className.match(/depth-(\d+)/)[1], 10);
-    const speed = 0.5 * depth; // Ajusta a velocidade com base na profundidade
-
-    let left = parseFloat(cloud.style.left || cloudStartX);
-    left += speed;
-
-    if (left > cloudEndX) {
-      left = cloudStartX; // Reposiciona para o início da área ajustada
-    }
-
-    cloud.style.left = `${left}px`;
-  });
-}
-
 function draw() {
-  try {
-    const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
-    const frameSkip = isMobile ? 2 : 1; // Pula frames em dispositivos móveis para melhorar o desempenho
-    if (frameCount % frameSkip !== 0) return;
-
-    tocarSomExplosaoSeNecessario();
-    background(30);
-    image(fundoImg, 0, 0, width, height);
-    updateGameLogic();
-    displaySmoke();
-  } catch (error) {
-    console.error('Erro no loop principal:', error);
-  }
+  tocarSomExplosaoSeNecessario();
+  background(30);
+  image(fundoImg, 0, 0, width, height);
   
   // Atualiza geradores de fogo no chão e partículas de fogo; depois atualiza fumaça
   updateGroundFires();
@@ -769,9 +738,7 @@ function draw() {
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
             if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
             else {
-              // this is an active player shot that hit the opponent; immediately change turn
-              // and clear the pendingTurnOwner so we don't double-switch below
-              try { mudarTurno(); } catch (e) { console.warn('mudarTurno error', e); }
+              mudarTurno();
               pendingTurnOwner = 0;
             }
           continue;
@@ -784,15 +751,10 @@ function draw() {
         projeteis.splice(i, 1);
       }
     }
-    // Centralized turn resolution: if a player fired (pendingTurnOwner) and that player
-    // currently has no active projectiles, switch the turn once and clear the pending flag.
-    try {
-      if (pendingTurnOwner && !projeteis.some(pp => pp.owner === pendingTurnOwner)) {
-        mudarTurno();
-        pendingTurnOwner = 0;
-      }
-    } catch (e) {
-      console.warn('Turn resolution error', e);
+    // Centralized turn resolution
+    if (pendingTurnOwner && !projeteis.some(pp => pp.owner === pendingTurnOwner)) {
+      mudarTurno();
+      pendingTurnOwner = 0;
     }
   }
   
@@ -810,7 +772,7 @@ function draw() {
     addSmoke(sx1, sy1, 1, 0.8);
   }
   
-  // Renderiza todas as partículas de fumaça (atrás de tudo)
+  // Renderiza todas as partículas de fumaça
   displaySmoke();
 }
 
@@ -853,16 +815,15 @@ function disparar() {
   let dy = y - origem.y;
   let angulo = atan2(dy, dx);
 
-    const fatorVelocidade = 0.5; // Reduz a velocidade do tiro
+      const fatorVelocidade = 0.5;
     const proj = {
       x: origem.x,
       y: origem.y,
       vx: cos(angulo) * potencia * fatorVelocidade,
       vy: sin(angulo) * potencia * fatorVelocidade,
       gravidade: 0.2,
-      owner: turno // who fired this projectile (1 or 2)
+      owner: turno
     };
-    console.log('DISPARAR: Player', turno, 'fired projectile from', origem.x.toFixed(1), origem.y.toFixed(1), 'velocity', proj.vx.toFixed(2), proj.vy.toFixed(2));
   projeteis.push(proj);
   // mark that this player's shot is pending a turn change when it resolves
   pendingTurnOwner = turno;
@@ -915,20 +876,23 @@ function recomecarJogo() {
   document.getElementById("turno").textContent = `Turno: Jogador 1`;
   document.getElementById('recomecar').style.display = 'none';
 }
-// Função para atualizar barras de vida
+// Função para atualizar barras de vida com cache
 if (typeof atualizarBarraVida !== 'function') {
+  const vidaCache = { vida1: null, vida2: null };
   function atualizarBarraVida(id, percentual) {
+    const val = Math.max(0, Math.min(100, percentual));
+    if (vidaCache[id] === val) return; // Evita atualização se valor não mudou
+    vidaCache[id] = val;
     const el = document.getElementById(id);
-    if (el) el.style.width = Math.max(0, Math.min(100, percentual)) + '%';
+    if (el) el.style.width = val + '%';
   }
 }
 
 
 // Plane spawner: aviao.png flies left->right, aviao1.png flies right->left
 ;(function () {
-  console.log('plane manager IIFE initializing');
-  const IMG_LR = 'assets/aviao.png';   // left -> right
-  const IMG_RL = 'assets/aviao1.png';  // right -> left
+  const IMG_LR = 'assets/aviao.png';
+  const IMG_RL = 'assets/aviao1.png';
   const BUFFER = 140;
 
   function computeTop() {
@@ -991,14 +955,11 @@ if (typeof atualizarBarraVida !== 'function') {
       el.style.transform = 'translateY(-50%) scaleX(-1)';
     }
     document.body.appendChild(el);
-  el._maxHp = 2; // number of successful hits to destroy (now 2 hits)
+  el._maxHp = 2;
   el._hp = el._maxHp;
-  // render HUD
   updatePlaneHUD(el);
-    // assign id
     planeCounter++;
     el._id = planeCounter;
-  console.log('createPlane dir=', dir, 'startX=', el._x, 'top=', topY, 'width=', el.style.width, 'id=', el._id, 'maxHp=', el._maxHp);
     return el;
   }
 
@@ -1009,31 +970,22 @@ if (typeof atualizarBarraVida !== 'function') {
   let active = createPlane(currentDir);
 
   // When a plane is hit, respawn a fresh plane in the same direction.
-  // If the event supplies a delayRespawn (ms) we'll wait that long before creating the new plane
   document.addEventListener('planeHit', (ev) => {
-    console.log('planeHit event received!', ev.detail);
     try {
       if (active) {
-        console.log('Removing current active plane, dir=', active._dir);
         const dir = active._dir || currentDir;
         active.remove();
         const delay = ev && ev.detail && typeof ev.detail.delayRespawn === 'number' ? ev.detail.delayRespawn : 0;
-        console.log('Will respawn plane after', delay, 'ms');
         if (delay > 0) {
           setTimeout(() => {
-            console.log('Creating new plane after delay, dir=', dir);
             active = createPlane(dir);
             currentDir = dir;
           }, delay);
         } else {
-          console.log('Creating new plane immediately, dir=', dir);
           active = createPlane(dir);
           currentDir = dir;
         }
-        // update HUD for the new plane
         if (active) updatePlaneHUD(active);
-      } else {
-        console.warn('planeHit event but no active plane!');
       }
     } catch (e) {
       console.warn('planeHit handler error', e);
@@ -1041,12 +993,10 @@ if (typeof atualizarBarraVida !== 'function') {
   });
 
   window.addEventListener('resize', () => {
-    // recompute shared top and update for all planes
     planeTopY = computeTop();
     document.querySelectorAll('.aviao-fly').forEach(p => {
       p.style.top = planeTopY + 'px';
         p._speed = (180 + Math.min(220, window.innerWidth / 3)) * PLANE_SPEED_FACTOR;
-  // adjust sizes responsively (slightly smaller)
   if (p._dir === 1) p.style.width = '64px';
   else p.style.width = '48px';
     });
@@ -1054,10 +1004,7 @@ if (typeof atualizarBarraVida !== 'function') {
 
   let last = null;
   function frame(ts) {
-    if (!last) {
-      last = ts;
-      console.log('plane frame loop started at', ts);
-    }
+    if (!last) last = ts;
     const dt = (ts - last) / 1000;
     last = ts;
 
@@ -1131,7 +1078,6 @@ if (typeof atualizarBarraVida !== 'function') {
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
         const savedHp = active._hp;
         const wasDamaged = savedHp < active._maxHp;
-        console.log('Plane exited screen (dir=1), HP was:', savedHp);
 
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
@@ -1143,12 +1089,10 @@ if (typeof atualizarBarraVida !== 'function') {
         if (wasDamaged) {
           active.style.opacity = '0.6';
           active.style.filter = 'brightness(0.7)';
-          console.log('Restored damaged appearance, HP:', active._hp);
         }
       } else if (active._dir === -1 && active._x <= -BUFFER) {
         const savedHp = active._hp;
         const wasDamaged = savedHp < active._maxHp;
-        console.log('Plane exited screen (dir=-1), HP was:', savedHp);
 
         try { removePlaneHUD(); } catch (e) {}
         active.remove();
@@ -1160,7 +1104,6 @@ if (typeof atualizarBarraVida !== 'function') {
         if (wasDamaged) {
           active.style.opacity = '0.6';
           active.style.filter = 'brightness(0.7)';
-          console.log('Restored damaged appearance, HP:', active._hp);
         }
       }
     }
@@ -1201,15 +1144,11 @@ function positionGameTitle() {
 
 window.addEventListener('resize', positionGameTitle);
 window.addEventListener('orientationchange', positionGameTitle);
-window.addEventListener('load', () => {
-  positionGameTitle();
-  // re-run after a short delay to capture any late layout adjustments
-  setTimeout(positionGameTitle, 350);
-});
+window.addEventListener('load', positionGameTitle);
 
 // Run once immediately if DOM is already ready
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
-  setTimeout(positionGameTitle, 50);
+  positionGameTitle();
 }
 
 // CSS corner-fire positioning helpers removed (DOM/CSS 3D effects were removed)
