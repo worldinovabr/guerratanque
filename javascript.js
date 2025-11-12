@@ -40,6 +40,9 @@ let planeCounter = 0; // unique id for planes (kept for future use)
 
 // Controle de visibilidade dos botões
 let botoesVisiveis = true;
+let botaoAtirarSolo = false;
+let clickCount = 0;
+let clickTimer = null;
 
 // Sistema de fumaça realista
 let smokeParticles = [];
@@ -1187,10 +1190,20 @@ if (document.readyState === 'interactive' || document.readyState === 'complete')
 // Funções para controlar visibilidade dos botões
 function ocultarBotoes() {
   const controls = document.querySelector('.controls-container');
+  const recomecar = document.getElementById('recomecar');
+  
   if (controls) {
     controls.style.opacity = '0';
     controls.style.pointerEvents = 'none';
     botoesVisiveis = false;
+    botaoAtirarSolo = false;
+    
+    // Manter botão recomeçar visível se o jogo terminou
+    if (recomecar && aguardandoRecomecar && recomecar.style.display === 'inline-flex') {
+      recomecar.style.opacity = '1';
+      recomecar.style.pointerEvents = 'auto';
+      recomecar.style.visibility = 'visible';
+    }
   }
 }
 
@@ -1200,29 +1213,149 @@ function mostrarBotoes() {
     controls.style.opacity = '1';
     controls.style.pointerEvents = 'auto';
     botoesVisiveis = true;
+    botaoAtirarSolo = false;
+    // Resetar estilos especiais
+    resetarEstilosBotoes();
+  }
+}
+
+function mostrarApenasAtirar() {
+  const controls = document.querySelector('.controls-container');
+  const disparar = document.getElementById('disparar');
+  const recomecar = document.getElementById('recomecar');
+  const coordControls = document.querySelector('.coord-controls');
+  const actionButtons = document.querySelector('.action-buttons');
+  const outrosBotoes = actionButtons.querySelectorAll('button:not(#disparar):not(#recomecar)');
+  
+  if (controls && disparar) {
+    // Mostrar container
+    controls.style.opacity = '1';
+    controls.style.pointerEvents = 'auto';
+    
+    // Ocultar coord-controls completamente
+    if (coordControls) {
+      coordControls.style.opacity = '0';
+      coordControls.style.pointerEvents = 'none';
+      coordControls.style.position = 'absolute';
+      coordControls.style.visibility = 'hidden';
+    }
+    
+    // Ocultar outros botões de ação (exceto disparar e recomeçar)
+    outrosBotoes.forEach(btn => {
+      btn.style.opacity = '0';
+      btn.style.pointerEvents = 'none';
+      btn.style.position = 'absolute';
+      btn.style.visibility = 'hidden';
+    });
+    
+    // Estilizar botão disparar com efeito glass
+    disparar.style.display = 'flex';
+    disparar.style.opacity = '1';
+    disparar.style.visibility = 'visible';
+    disparar.style.position = 'relative';
+    disparar.style.background = 'rgba(255, 255, 255, 0.15)';
+    disparar.style.backdropFilter = 'blur(10px)';
+    disparar.style.webkitBackdropFilter = 'blur(10px)';
+    disparar.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    disparar.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+    
+    // Manter botão recomeçar visível se o jogo terminou
+    if (recomecar && aguardandoRecomecar && recomecar.style.display === 'inline-flex') {
+      recomecar.style.opacity = '1';
+      recomecar.style.pointerEvents = 'auto';
+      recomecar.style.visibility = 'visible';
+      recomecar.style.position = 'relative';
+    }
+    
+    botoesVisiveis = false;
+    botaoAtirarSolo = true;
+  }
+}
+
+function resetarEstilosBotoes() {
+  const coordControls = document.querySelector('.coord-controls');
+  const actionButtons = document.querySelector('.action-buttons');
+  const disparar = document.getElementById('disparar');
+  const recomecar = document.getElementById('recomecar');
+  const outrosBotoes = actionButtons ? actionButtons.querySelectorAll('button:not(#disparar):not(#recomecar)') : [];
+  
+  // Mostrar todos os elementos
+  if (coordControls) {
+    coordControls.style.display = '';
+    coordControls.style.opacity = '';
+    coordControls.style.pointerEvents = '';
+    coordControls.style.position = '';
+    coordControls.style.visibility = '';
+  }
+  
+  outrosBotoes.forEach(btn => {
+    btn.style.display = '';
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    btn.style.position = '';
+    btn.style.visibility = '';
+  });
+  
+  // Resetar estilos do botão disparar
+  if (disparar) {
+    disparar.style.background = '';
+    disparar.style.backdropFilter = '';
+    disparar.style.webkitBackdropFilter = '';
+    disparar.style.border = '';
+    disparar.style.boxShadow = '';
+    disparar.style.opacity = '';
+    disparar.style.position = '';
+    disparar.style.visibility = '';
+  }
+  
+  // Não resetar o botão recomeçar se o jogo terminou
+  if (recomecar && (!aguardandoRecomecar || recomecar.style.display !== 'inline-flex')) {
+    recomecar.style.opacity = '';
+    recomecar.style.pointerEvents = '';
+    recomecar.style.position = '';
+    recomecar.style.visibility = '';
   }
 }
 
 // Adicionar eventos de duplo clique aos botões de controle e à tela
 window.addEventListener('load', function() {
-  // Duplo clique em qualquer lugar da tela para ocultar/mostrar
-  document.addEventListener('dblclick', function(e) {
-    e.preventDefault();
+  // Detector de cliques múltiplos (2 ou 3 cliques)
+  document.addEventListener('click', function(e) {
+    clickCount++;
     
-    if (botoesVisiveis) {
-      // Se os botões estão visíveis, oculta
-      ocultarBotoes();
-    } else {
-      // Se os botões estão ocultos, mostra
-      mostrarBotoes();
+    // Limpar timer anterior
+    if (clickTimer) {
+      clearTimeout(clickTimer);
     }
+    
+    // Timer para resetar contagem após 500ms
+    clickTimer = setTimeout(function() {
+      // Processar baseado no número de cliques
+      if (clickCount === 2) {
+        // Duplo clique: toggle visibilidade normal
+        if (botaoAtirarSolo) {
+          // Se está em modo solo, volta ao normal
+          mostrarBotoes();
+        } else if (botoesVisiveis) {
+          ocultarBotoes();
+        } else {
+          mostrarBotoes();
+        }
+      } else if (clickCount === 3) {
+        // Triplo clique: mostrar apenas botão atirar
+        mostrarApenasAtirar();
+      }
+      
+      // Resetar contagem
+      clickCount = 0;
+    }, 500);
   });
   
-  // Prevenir que cliques nos botões propagam e causem duplo toggle
+  // Prevenir que cliques nos botões interfiram com a contagem
   const allButtons = document.querySelectorAll('.controls-container button');
   allButtons.forEach(button => {
-    button.addEventListener('dblclick', function(e) {
-      e.stopPropagation();
+    button.addEventListener('click', function(e) {
+      // Não fazer stopPropagation para permitir a contagem de cliques
     });
   });
 });
