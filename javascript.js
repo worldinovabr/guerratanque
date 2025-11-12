@@ -561,178 +561,113 @@ function draw() {
 
   // Projéteis em movimento
   if (!aguardandoRecomecar) {
+    // Cache expensive DOM queries per frame (avoid calling getBoundingClientRect inside the projectile loop)
+    const planeEl = document.querySelector('.aviao-fly');
+    const canvas = document.querySelector('canvas');
+    let planeHitbox = null; // { x,y,w,h, centerX, centerY }
+    if (planeEl && canvas) {
+      try {
+        const pr = planeEl.getBoundingClientRect();
+        const cr = canvas.getBoundingClientRect();
+        const planeX = ((pr.left - cr.left) / cr.width) * width;
+        const planeY = ((pr.top - cr.top) / cr.height) * height;
+        const planeW = (pr.width / cr.width) * width;
+        const planeH = (pr.height / cr.height) * height;
+        planeHitbox = {
+          x: planeX,
+          y: planeY,
+          w: planeW,
+          h: planeH,
+          centerX: ((pr.left + pr.width/2 - cr.left) / cr.width) * width,
+          centerY: ((pr.top + pr.height/2 - cr.top) / cr.height) * height,
+          rawPr: pr,
+          rawCr: cr
+        };
+      } catch (e) {
+        planeHitbox = null;
+      }
+    }
+
     for (let i = projeteis.length - 1; i >= 0; i--) {
       let p = projeteis[i];
+      if (!p) continue;
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += p.gravidade;
+      if (p.gravidade) p.vy += p.gravidade;
 
-      // Player projectiles can hit the plane
-      if (p && (p.owner === 1 || p.owner === 2)) {
-        // Add a check counter to this projectile
-        if (!p._checkCount) p._checkCount = 0;
-        p._checkCount++;
-        try {
-          const planeEl = document.querySelector('.aviao-fly');
-          const canvas = document.querySelector('canvas');
-          if (!planeEl) {
-            if (p._checkCount === 1) console.log('No plane element found (.aviao-fly)');
-          }
-          if (planeEl && canvas) {
-            const pr = planeEl.getBoundingClientRect();
-            const cr = canvas.getBoundingClientRect();
-            const planeX = ((pr.left - cr.left) / cr.width) * width;
-            const planeY = ((pr.top - cr.top) / cr.height) * height;
-            const planeW = (pr.width / cr.width) * width;
-            const planeH = (pr.height / cr.height) * height;
-            // Use full plane size as hitbox (easier to hit for testing)
-            const hitboxW = planeW * 1.0;
-            const hitboxH = planeH * 1.0;
-            const hitboxX = planeX;
-            const hitboxY = planeY;
-            // Log first few checks for this projectile
-            if (p._checkCount <= 3) {
-              console.log('Check #' + p._checkCount + ': proj(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ') vs plane hitbox(' + hitboxX.toFixed(1) + '-' + (hitboxX+hitboxW).toFixed(1) + ', ' + hitboxY.toFixed(1) + '-' + (hitboxY+hitboxH).toFixed(1) + ')');
+      // --- Plane collision (only for player projectiles) ---
+      if ((p.owner === 1 || p.owner === 2) && planeHitbox && planeEl) {
+        if (p.x > planeHitbox.x && p.x < planeHitbox.x + planeHitbox.w && p.y > planeHitbox.y && p.y < planeHitbox.y + planeHitbox.h) {
+          // hit
+          planeEl._hp = (typeof planeEl._hp === 'number') ? planeEl._hp - 1 : -1;
+          // remove projectile
+          projeteis.splice(i, 1);
+
+          // first hit: darken + show small defense effect
+          if (planeEl._hp > 0) {
+            planeEl.style.opacity = '0.6';
+            planeEl.style.filter = 'brightness(0.7)';
+            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 100, fade: true, alpha: 255, fadeStep: 10, img: defesaImg };
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, 3, 0.8);
+          } else {
+            // destroyed
+            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 120 };
+            explosaoTimer = 40;
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, 8, 1.5);
+            if (p.owner === 1 || p.owner === 2) {
+              placar[p.owner - 1]++;
+              document.getElementById('p1score').textContent = placar[0];
+              document.getElementById('p2score').textContent = placar[1];
             }
-            if (p.x > hitboxX && p.x < hitboxX + hitboxW && p.y > hitboxY && p.y < hitboxY + hitboxH) {
-              console.log('✓✓✓ HIT DETECTED! Projectile from player', p.owner, 'hit plane id', planeEl._id);
-              
-              // Decrementa HP do avião
-              planeEl._hp--;
-              console.log('HP ANTES:', planeEl._hp + 1, '→ HP DEPOIS:', planeEl._hp, '/', planeEl._maxHp);
-              
-              // Calculate plane center in canvas coordinates
-              const planeCenterCanvasX = ((pr.left + pr.width/2 - cr.left) / cr.width) * width;
-              const planeCenterCanvasY = ((pr.top + pr.height/2 - cr.top) / cr.height) * height;
-              
-              // Remove projectile
-              projeteis.splice(i, 1);
-              
-              // PRIMEIRO TIRO: Escurece o avião e mostra defesa.png
-              if (planeEl._hp > 0) {
-                console.log('>>> PRIMEIRO TIRO: Escurecendo avião');
-                planeEl.style.opacity = '0.6';
-                planeEl.style.filter = 'brightness(0.7)';
-                
-                // Mostra imagem defesa.png com fade
-                explosao = { 
-                  x: planeCenterCanvasX, 
-                  y: planeCenterCanvasY, 
-                  size: 100, 
-                  fade: true, 
-                  alpha: 255, 
-                  fadeStep: 10, 
-                  img: defesaImg 
-                };
-                
-                // Fumaça leve no primeiro tiro
-                addSmoke(planeCenterCanvasX, planeCenterCanvasY, 3, 0.8);
-              } 
-              // SEGUNDO TIRO: Explosão completa e destruição
-              else {
-                console.log('>>> SEGUNDO TIRO: DESTRUINDO AVIÃO');
-                
-                // Explosão animada
-                explosao = { x: planeCenterCanvasX, y: planeCenterCanvasY, size: 120 };
-                explosaoTimer = 40;
-                
-                // Fumaça intensa na destruição
-                addSmoke(planeCenterCanvasX, planeCenterCanvasY, 8, 1.5);
-                console.log('PLANE DESTROYED! Awarding point to player', p.owner);
-                // Award score to shooter
-                if (p.owner === 1 || p.owner === 2) {
-                  placar[p.owner - 1]++;
-                  document.getElementById('p1score').textContent = placar[0];
-                  document.getElementById('p2score').textContent = placar[1];
-                  console.log('Score updated: Player 1 =', placar[0], 'Player 2 =', placar[1]);
-                }
-                
-                // Create falling broken plane fragment
-                const planeWCanvas = (pr.width / cr.width) * width;
-                const planeHCanvas = (pr.height / cr.height) * height;
-                const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
-                const brokenImg = aviaoQuebrado1Img; // Always use aviaoquebrado1
-                console.log('brokenImg loaded?', brokenImg ? 'YES' : 'NO', 'size:', sizeForPlane);
-                
-                const frag = {
-                  x: planeCenterCanvasX,
-                  y: planeCenterCanvasY,
-                  size: sizeForPlane,
-                  vx: (planeEl._dir || 1) * (1 + Math.random() * 2),
-                  vy: 1 + Math.random() * 2,
-                  grav: 0.18,
-                  rot: 0,
-                  rotV: (Math.random() - 0.5) * 0.08,
-                  img: brokenImg,
-                  alpha: 255
-                };
-                fallenPlanes.push(frag);
-                console.log('Created falling plane fragment at', planeCenterCanvasX.toFixed(1), planeCenterCanvasY.toFixed(1));
-                
-                // Remove the plane DOM element immediately
-                if (planeEl && planeEl.parentNode) {
-                  console.log('Removing plane element from DOM');
-                  planeEl.parentNode.removeChild(planeEl);
-                }
-                
-                // Tell plane manager to respawn after delay
-                console.log('Dispatching planeHit event with 1200ms delay');
-                document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
-              }
-              break;
+            // create falling fragment
+            try {
+              const pr = planeHitbox.rawPr;
+              const cr = planeHitbox.rawCr;
+              const planeWCanvas = (pr.width / cr.width) * width;
+              const planeHCanvas = (pr.height / cr.height) * height;
+              const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
+              const frag = {
+                x: planeHitbox.centerX,
+                y: planeHitbox.centerY,
+                size: sizeForPlane,
+                vx: (planeEl._dir || 1) * (1 + Math.random() * 2),
+                vy: 1 + Math.random() * 2,
+                grav: 0.18,
+                rot: 0,
+                rotV: (Math.random() - 0.5) * 0.08,
+                img: aviaoQuebrado1Img,
+                alpha: 255
+              };
+              fallenPlanes.push(frag);
+            } catch (e) {
+              // ignore fragment errors
             }
+            // remove plane element and request respawn
+            try { if (planeEl && planeEl.parentNode) planeEl.parentNode.removeChild(planeEl); } catch (e) {}
+            document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 1200 } }));
           }
-        } catch (err) {
-          // ignore plane-hit detection errors
-          console.warn('plane collision detection error:', err);
+          continue; // move to next projectile
         }
       }
 
-      // If projectile was already removed (hit plane), skip drawing and other checks
-      if (!projeteis[i]) continue;
+      // --- Draw projectile ---
+      if (p.owner === 0) {
+        if (typeof bombaImg !== 'undefined' && bombaImg) {
+          const bw = 25; const bh = 10;
+          image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
+        } else {
+          push(); noStroke(); fill(200,30,30); ellipse(p.x, p.y, 18, 18);
+          fill(120,20,20,160); ellipse(p.x, p.y+4, 10, 6); pop();
+        }
+      } else {
+        push(); translate(p.x, p.y); let ang = atan2(p.vy, p.vx); rotate(ang);
+        fill(200); stroke(80); strokeWeight(1); rect(-8, -3, 16, 6, 3);
+        fill(220,0,0); noStroke(); ellipse(8,0,7,7);
+        let fireLen = 6 + random(2,6); fill(255,180,0,180); ellipse(-10,0,fireLen,6);
+        fill(255,80,0,120); ellipse(-13,0,fireLen*0.7,4); pop();
+      }
 
-      // Desenha um míssil estilizado (ou bomba do avião)
-  if (p && p.owner === 0) {
-    // bomba: desenhe imagem quando disponível, senão use fallback óbvio
-    if (typeof bombaImg !== 'undefined' && bombaImg) {
-      // draw centered bomb image (approx 24x24)
-      const bw = 25;
-      const bh = 10;
-      image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
-    } else {
-      push();
-      noStroke();
-      fill(200, 30, 30);
-      ellipse(p.x, p.y, 18, 18);
-      // pingo de sombra
-      fill(120, 20, 20, 160);
-      ellipse(p.x, p.y + 4, 10, 6);
-      pop();
-    }
-  } else {
-    push();
-    translate(p.x, p.y);
-    let ang = atan2(p.vy, p.vx);
-    rotate(ang);
-    // Corpo do míssil
-    fill(200);
-    stroke(80);
-    strokeWeight(1);
-    rect(-8, -3, 16, 6, 3);
-    // Ponta vermelha
-    fill(220, 0, 0);
-    noStroke();
-    ellipse(8, 0, 7, 7);
-    // Cauda de fogo animada
-    let fireLen = 6 + random(2, 6);
-    fill(255, 180, 0, 180);
-    ellipse(-10, 0, fireLen, 6);
-    fill(255, 80, 0, 120);
-    ellipse(-13, 0, fireLen * 0.7, 4);
-    pop();
-  }
-
-      // Determine if projectile hits either tank (bombs can hit any; player shot targets enemy only)
+      // --- Tank collisions / scoring ---
       const tankHit = (tankObj) => {
         const hb = { x: tankObj.x - tankObj.w/2, y: tankObj.y - tankObj.h/2, w: tankObj.w, h: tankObj.h };
         return p.x > hb.x && p.x < hb.x + hb.w && p.y > hb.y && p.y < hb.y + hb.h;
@@ -740,68 +675,43 @@ function draw() {
       const hitTank1 = tankHit(tanque1);
       const hitTank2 = tankHit(tanque2);
       if (p.owner === 0) {
-        // Bomb from plane: damage whichever tank it hits (only one in practice)
-        let damagedIdx = -1;
-        if (hitTank1) damagedIdx = 0; else if (hitTank2) damagedIdx = 1;
+        let damagedIdx = -1; if (hitTank1) damagedIdx = 0; else if (hitTank2) damagedIdx = 1;
         if (damagedIdx !== -1) {
           vida[damagedIdx] = Math.max(0, vida[damagedIdx] - 10);
           setTimeout(() => atualizarBarraVida(damagedIdx === 0 ? 'vida1' : 'vida2', vida[damagedIdx]), 50);
           explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 };
           explosaoTimer = 40;
-          
-          // Adiciona fumaça da explosão de bomba (use anchor se disponível, senão fallback para offset do tanque)
           let anchor = groundFireAnchors[damagedIdx];
           let smokeOffsetX = (anchor && isFinite(anchor.x)) ? anchor.x : ((damagedIdx === 0) ? (tanque1.x - 12) : (tanque2.x + 36));
           let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
           addSmoke(smokeOffsetX, smokeOffsetY, 6, 1.3);
           projeteis.splice(i, 1);
-          if (damagedIdx === 0 && vida[damagedIdx] > 0) {
-            tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000);
-          } else if (damagedIdx === 1 && vida[damagedIdx] > 0) {
-            tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000);
-          }
-          if (vida[damagedIdx] <= 0) {
-            aguardandoRecomecar = true;
-            setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
-          }
-          // Bombs do not affect score or turn.
-          break;
+          if (damagedIdx === 0 && vida[damagedIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
+          else if (damagedIdx === 1 && vida[damagedIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
+          if (vida[damagedIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
+          continue;
         }
       } else {
-        // Player projectile: can only score by hitting the opponent's tank
         const adversarioIdx = (turno === 1 ? 1 : 0);
         const adversarioTank = adversarioIdx === 0 ? tanque1 : tanque2;
         if (tankHit(adversarioTank)) {
-          // award score to projectile owner (validate owner in [1,2])
-            if (p.owner === 1 || p.owner === 2) {
-              placar[p.owner - 1]++;
-              document.getElementById('p1score').textContent = placar[0];
-              document.getElementById('p2score').textContent = placar[1];
-            }
+          if (p.owner === 1 || p.owner === 2) { placar[p.owner - 1]++; document.getElementById('p1score').textContent = placar[0]; document.getElementById('p2score').textContent = placar[1]; }
           vida[adversarioIdx] = Math.max(0, vida[adversarioIdx] - 10);
           setTimeout(() => atualizarBarraVida(adversarioIdx === 0 ? 'vida1' : 'vida2', vida[adversarioIdx]), 50);
           explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 };
           explosaoTimer = 40;
-          
-          // Adiciona fumaça da explosão de tanque
           addSmoke(adversarioTank.x, adversarioTank.y, 10, 1.8);
-          
           projeteis.splice(i, 1);
           if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
-          if (vida[adversarioIdx] <= 0) {
-            aguardandoRecomecar = true;
-            setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300);
-          } else {
-            mudarTurno();
-          }
-          break;
+          if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
+          else { mudarTurno(); }
+          continue;
         }
       }
 
       // Remove projétil se sair da tela
       if (p.x < 0 || p.x > width || p.y > height) {
-        // remove projectile; only change turn for player shots
         const wasPlayerShot = (p.owner === 1 || p.owner === 2);
         projeteis.splice(i, 1);
         if (wasPlayerShot) mudarTurno();
