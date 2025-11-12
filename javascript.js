@@ -34,7 +34,7 @@ let howlerFundoMusical;
 let aviaoQuebrado1Img, aviaoQuebrado2Img;
 let vida = [100, 100];
 let p5Ready = false; // becomes true after setup() completes
-const PLANE_SPEED_FACTOR = 1.1; // 1.0 = normal speed, <1 slower
+const PLANE_SPEED_FACTOR = 1; // 1.0 = normal speed, <1 slower
 let fallenPlanes = []; // fragments for broken planes that fall with gravity
 let planeCounter = 0; // unique id for planes (kept for future use)
 
@@ -1092,7 +1092,7 @@ if (typeof atualizarBarraVida !== 'function') {
           projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
 
           // Reagenda o próximo disparo para um tempo aleatório entre ~300ms e ~2s
-          active._nextDrop = ts + (400 + Math.random() * 2700);
+          active._nextDrop = ts + (650 + Math.random() * 4700);
         }
       } catch (err) {
         console.warn('plane drop error', err);
