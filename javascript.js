@@ -429,10 +429,18 @@ function preload() {
 function setup() {
   const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
 
-  createCanvas(800, 400); // Mantém o tamanho da tela
+  // Desktop: canvas (1600x600), Mobile: canvas padrão (800x400)
+  if (isMobile) {
+    createCanvas(800, 400);
+  } else {
+    createCanvas(1600, 600);
+  }
 
-  tanque1 = { x: 150, y: 315, w: 90, h: 135 };
-  tanque2 = { x: 700, y: 315, w: 110, h: 135 };
+  // Ajusta posições e tamanhos dos tanques proporcionalmente ao canvas
+  const scale = isMobile ? 1 : 2.0;
+  const yOffset = isMobile ? 0 : -100; // ajuste para compensar a altura menor
+  tanque1 = { x: 150 * scale, y: (315 * scale) + yOffset, w: 90 * scale, h: 135 * scale };
+  tanque2 = { x: 700 * scale, y: (315 * scale) + yOffset, w: 110 * scale, h: 135 * scale };
   vida = [100, 100];
   setTimeout(() => {
     atualizarBarraVida('vida1', vida[0]);
@@ -441,12 +449,12 @@ function setup() {
   p5Ready = true;
 
   try {
-    setGroundFireAnchor(0, tanque1.x - 88, tanque1.y + 20);
-    setGroundFireAnchor(1, tanque2.x + 86, tanque2.y + 20);
+    setGroundFireAnchor(0, tanque1.x - 88 * scale, tanque1.y + 10 * scale);
+    setGroundFireAnchor(1, tanque2.x + 86 * scale, tanque2.y + 10 * scale);
     createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
     createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
     const midX = Math.round((tanque1.x + tanque2.x) / 2);
-    const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 22 + 18);
+    const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 5 * scale);
     setGroundFireAnchor(2, midX, midY);
     createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { rate: isMobile ? 12 : 10, fireRate: isMobile ? 10 : 8, smokeCount: 1, smokeIntensity: isMobile ? 0.25 : 0.35, fireSizeScale: isMobile ? 0.45 : 0.55 });
   } catch (e) {
@@ -482,7 +490,7 @@ function draw() {
   if (vida[0] <= 0 || tanque1QuebradoTemp) {
     // Exibir o tanque quebrado sem inversão (apply offset)
     pop();
-    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 -20 + ox0, tanque1.y - tanque1.h / 2 -30 + oy0, tanque1.w, tanque1.h);
+    image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 -20 + ox0, tanque1.y - tanque1.h / 2 -60 + oy0, tanque1.w, tanque1.h);
   } else {
     image(tanque1Img, -tanque1.w / 2, -tanque1.h / 2, tanque1.w, tanque1.h);
     pop();
@@ -497,7 +505,7 @@ function draw() {
     push();
     translate(tanque2.x + ox1, tanque2.y + oy1);
     scale(-1, 1);
-    image(tanque2QuebradoImg, -tanque2.w / 2, -tanque2.h / 2 - 30, tanque2.w, tanque2.h); // Move image 20px up
+    image(tanque2QuebradoImg, -tanque2.w / 2, -tanque2.h / 2 - 60, tanque2.w, tanque2.h); // Move image 20px up
     pop();
   } else {
     image(tanque2Img, tanque2.x - tanque2.w / 2 + ox1, tanque2.y - tanque2.h / 2 + oy1, tanque2.w, tanque2.h);

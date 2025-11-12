@@ -552,7 +552,7 @@
 /* Ajuste de layout para posicionar elementos conforme imagem */
 .placar-futebol {
   position: absolute;
-  top: 60px;
+  top: 5px;
   left: 0;
   right: 0;
   margin-left: auto;
@@ -562,14 +562,14 @@
   align-items: center;
   justify-content: center;
   background: rgba(30, 40, 50, 0.973);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px #000a;
-  padding: 8px 18px;
-  font-size: 1.5rem;
+  border-radius: 18px;
+  box-shadow: 0 5px 24px #000a;
+  padding: 18px 38px;
+  font-size: 2.5rem;
   font-weight: 700;
-  min-width: 340px;
-  max-width: 480px;
-  border: 2px solid #222;
+  min-width: 560px;
+  max-width: 740px;
+  border: 3px solid #222;
 }
 
 .turno-texto {
@@ -587,15 +587,15 @@
 .controls-container {
   position: fixed;
   left: 50%;
-  bottom: 12px;
+  bottom: 0px;
   transform: translateX(-50%);
   z-index: 1100;
-  background: rgba(20,20,20,0.75);
-  border-radius: 10px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.65);
-  padding: 10px 24px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 20px;
   display: flex;
-  gap: 30px;
+  gap: 50px;
   align-items: center;
   max-width: calc(100% - 24px);
   box-sizing: border-box;
@@ -604,7 +604,7 @@
 /* Controles de coordenadas */
 .coord-controls {
   display: flex;
-  gap: 20px;
+  gap: 35px;
   align-items: center;
 }
 
@@ -612,30 +612,30 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .coord-item label {
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: bold;
   text-shadow: 1px 1px 2px #000;
-  min-width: 25px;
+  min-width: 35px;
   text-align: center;
 }
 
 .coord-item button {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border: 2px solid #777;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #444;
   color: #fff;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .coord-item button:hover {
@@ -651,27 +651,27 @@
 
 .coord-item span {
   color: #ffcc00;
-  font-size: 18px;
+  font-size: 24px;
   font-weight: bold;
-  min-width: 35px;
+  min-width: 55px;
   text-align: center;
   text-shadow: 1px 1px 2px #000;
-  background: rgba(0,0,0,0.4);
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: rgba(0,0,0,0.5);
+  padding: 6px 12px;
+  border-radius: 6px;
   border: 1px solid #333;
 }
 
 /* Botões de ação */
 .action-buttons {
   display: flex;
-  gap: 24px;
+  gap: 32px;
 }
 /* Ícones dos botões de ação */
 .btn-icone {
   vertical-align: middle;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 }
 /* Debug style for airplane DOM elements to ensure visibility while diagnosing bombs */
 .aviao-fly {
@@ -688,14 +688,12 @@
   gap: 6px;
 }
 .soldado-icone {
-  width: 28px !important;
-  height: 28px !important;
-  width: 72px;
-  height: 72px;
+  width: 54px !important;
+  height: 54px !important;
   max-width: unset;
   max-height: unset;
-  margin: 0 8px;
-  filter: drop-shadow(0 1px 2px #000a);
+  margin: 0 14px;
+  filter: drop-shadow(0 2px 5px #000a);
 }
 .soldado-red {
   filter: drop-shadow(0 1px 2px #000a);
@@ -713,17 +711,17 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 32px;
+  gap: 55px;
   margin-bottom: 18px;
 }
 .vida-bar {
-  width: 180px;
-  height: 18px;
+  width: 280px;
+  height: 28px;
   background: #222;
-  border-radius: 10px;
-  box-shadow: 0 1px 6px #000a;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px #000a;
   overflow: hidden;
-  border: 2px solid #444;
+  border: 3px solid #444;
   position: relative;
 }
 .vida-green {
@@ -865,7 +863,7 @@ input[type="number"] {
   width: 2px;
   height: 32px;
   background: linear-gradient(to bottom, #aaa 60%, #222 100%);
-  margin: 0 8px;
+  margin: 0 10px;
   border-radius: 2px;
   opacity: 0.7;
 }
@@ -907,6 +905,17 @@ body {
   text-align: center;
   margin: 0;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+html {
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 /* Título */
@@ -919,30 +928,41 @@ h1 {
 /* Game title centered on screen */
 #game-title {
   position: absolute; /* place relative to viewport, under the scoreboard */
-  top: 115px; /* sits below the scoreboard */
+  top: 85px; /* sits below the scoreboard */
   left: 50%;
   transform: translateX(-50%);
   z-index: 9; /* just under the scoreboard (which uses z-index:10) */
   color: #ffdd33;
-  /* fixed 14px font on all screens, default font styling */
-  font-size: 14px;
-  font-weight: 400;
+  /* increased font size for desktop */
+  font-size: 22px;
+  font-weight: 600;
   font-family: inherit;
-  letter-spacing: 1px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   text-shadow: 0 4px 20px rgba(0,0,0,0.85), 0 1px 0 rgba(255,255,255,0.05);
   pointer-events: none;
   mix-blend-mode: normal;
-  padding: 2px 6px;
+  padding: 4px 10px;
+}
+
+/* Sobrescrever para desktop - garantir que fique próximo ao placar */
+@media (min-width: 901px) {
+  #game-title {
+    top: 85px !important;
+  }
 }
 
 /* Title uses fixed 14px across all viewports; no responsive overrides */
 
 /* Canvas do jogo */
 canvas {
-  border: 3px solid #fff;
-  margin-bottom: 15px;
-  box-shadow: 0 0 10px #000;
+  border: 5px solid #fff;
+  margin-bottom: 25px;
+  margin-top: -60px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.7);
+  border-radius: 3px;
+  max-width: 95%;
+  height: auto;
 }
 
 /* Placar com efeito */
@@ -1084,15 +1104,15 @@ input[type="number"] {
 
 /* Botões gerais */
 button {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   padding: 0;
-  font-size: 20px;
+  font-size: 24px;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 5px #000a;
-  transition: background-color 0.3s, box-shadow 0.3s;
+  box-shadow: 0 4px 10px rgba(194, 193, 193, 0.667);
+  transition: background-color 0.3s, box-shadow 0.3s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1322,15 +1342,15 @@ button#tras:hover {
 .controls-container.responsive-bottom {
   position: fixed !important;
   left: 50% !important;
-  bottom: 14px !important;            /* small gap from bottom edge */
+  bottom: 0px !important;            /* colado na borda inferior */
   transform: translateX(-50%) !important;
   width: auto !important;              /* auto width for desktop */
   max-width: 900px !important;         /* prevent too wide on large screens */
   margin: 0 auto !important;
-  border-radius: 12px !important;
-  background: rgba(20,20,20,0.72) !important; /* slightly darker translucent card */
-  box-shadow: 0 6px 24px rgba(0,0,0,0.6) !important;
-  padding: 12px 20px !important;
+  border-radius: 0 !important;
+  background: none !important; /* sem fundo */
+  box-shadow: none !important;
+  padding: 10px 20px !important;
   z-index: 1100 !important; /* above canvas and other UI layers */
   display: flex !important;
   flex-direction: row !important;
