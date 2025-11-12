@@ -13,6 +13,9 @@ let engineOsc = [
 ];
 let projeteis = [];
 let turno = 1;
+// when a player fires, mark pendingTurnOwner so we only change turn once all that player's
+// projectiles are gone (or when code calls mudarTurno explicitly)
+let pendingTurnOwner = 0;
 let placar = [0, 0];
 let explosao = null;
 let explosaoTimer = 0;
@@ -764,18 +767,32 @@ function draw() {
           projeteis.splice(i, 1);
           if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
-          if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
-          else { mudarTurno(); }
+            if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
+            else {
+              // this is an active player shot that hit the opponent; immediately change turn
+              // and clear the pendingTurnOwner so we don't double-switch below
+              try { mudarTurno(); } catch (e) { console.warn('mudarTurno error', e); }
+              pendingTurnOwner = 0;
+            }
           continue;
         }
       }
 
       // Remove projétil se sair da tela
       if (p.x < 0 || p.x > width || p.y > height) {
-        const wasPlayerShot = (p.owner === 1 || p.owner === 2);
+        // simply remove the projectile; turn resolution is handled centrally below
         projeteis.splice(i, 1);
-        if (wasPlayerShot) mudarTurno();
       }
+    }
+    // Centralized turn resolution: if a player fired (pendingTurnOwner) and that player
+    // currently has no active projectiles, switch the turn once and clear the pending flag.
+    try {
+      if (pendingTurnOwner && !projeteis.some(pp => pp.owner === pendingTurnOwner)) {
+        mudarTurno();
+        pendingTurnOwner = 0;
+      }
+    } catch (e) {
+      console.warn('Turn resolution error', e);
     }
   }
   
@@ -821,7 +838,8 @@ function alterarValor(id, incremento) {
 }
 
 function disparar() {
-  if (projeteis.length > 0 || explosaoTimer > 0 || aguardandoRecomecar) return;
+  // Allow firing as long as this player doesn't already have an active projectile
+  if (projeteis.some(p => p.owner === turno) || explosaoTimer > 0 || aguardandoRecomecar) return;
 
   let x = parseInt(document.getElementById("coordX").textContent);
   let y = parseInt(document.getElementById("coordY").textContent);
@@ -845,7 +863,9 @@ function disparar() {
       owner: turno // who fired this projectile (1 or 2)
     };
     console.log('DISPARAR: Player', turno, 'fired projectile from', origem.x.toFixed(1), origem.y.toFixed(1), 'velocity', proj.vx.toFixed(2), proj.vy.toFixed(2));
-    projeteis.push(proj);
+  projeteis.push(proj);
+  // mark that this player's shot is pending a turn change when it resolves
+  pendingTurnOwner = turno;
 }
 
 function moverTanque(direcao) {
