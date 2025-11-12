@@ -397,10 +397,38 @@ function setup() {
 
 }
 
+function updateClouds() {
+  const canvasWidth = width;
+  const canvasHeight = height;
+  const cloudStartX = -20; // Diminui ainda mais o início das nuvens
+  const cloudEndX = canvasWidth + 20; // Diminui ainda mais o fim das nuvens
+
+  document.querySelectorAll('.cloud').forEach(cloud => {
+    const depth = parseInt(cloud.className.match(/depth-(\d+)/)[1], 10);
+    const speed = 0.5 * depth; // Ajusta a velocidade com base na profundidade
+
+    let left = parseFloat(cloud.style.left || cloudStartX);
+    left += speed;
+
+    if (left > cloudEndX) {
+      left = cloudStartX; // Reposiciona para o início da área ajustada
+    }
+
+    cloud.style.left = `${left}px`;
+  });
+}
+
 function draw() {
-  tocarSomExplosaoSeNecessario();
-  background(30);
-  image(fundoImg, 0, 0, width, height);
+  try {
+    tocarSomExplosaoSeNecessario();
+    background(30);
+    image(fundoImg, 0, 0, width, height);
+    updateClouds();
+    updateGameLogic();
+    displaySmoke();
+  } catch (error) {
+    console.error('Erro no loop principal:', error);
+  }
   
   // Atualiza geradores de fogo no chão e partículas de fogo; depois atualiza fumaça
   updateGroundFires();
