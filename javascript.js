@@ -1067,8 +1067,8 @@ if (typeof atualizarBarraVida !== 'function') {
 
       // Lógica de disparo a cada 3 segundos
       try {
-  // schedule the first drop and subsequent drops at a random interval (800ms..5000ms)
-  if (!active._nextDrop) active._nextDrop = ts + (800 + Math.random() * 4200);
+  // schedule the first drop and subsequent drops at a faster random interval (~300ms..2000ms)
+    if (!active._nextDrop) active._nextDrop = ts + (300 + Math.random() * 1700);
   if (ts >= active._nextDrop) {
           const pr = active.getBoundingClientRect();
           const canvas = document.querySelector('canvas');
@@ -1091,8 +1091,8 @@ if (typeof atualizarBarraVida !== 'function') {
 
           projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
 
-          // Reagenda o próximo disparo para um tempo aleatório entre ~800ms e ~5s
-          active._nextDrop = ts + (800 + Math.random() * 4200);
+          // Reagenda o próximo disparo para um tempo aleatório entre ~300ms e ~2s
+          active._nextDrop = ts + (300 + Math.random() * 1700);
         }
       } catch (err) {
         console.warn('plane drop error', err);
