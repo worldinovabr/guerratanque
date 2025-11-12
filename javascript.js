@@ -502,7 +502,7 @@ function draw() {
   push();
   translate(tanque1.x + ox0, tanque1.y + oy0);
   scale(-1.3, 1);
-  if (vida[0] <= 0 || tanque1QuebradoTemp) {
+  if (vida[0] <= 0) {
     // Exibir o tanque quebrado sem inversão (apply offset)
     pop();
     image(tanque1QuebradoImg, tanque1.x - tanque1.w / 2 -20 + ox0, tanque1.y - tanque1.h / 2 -60 + oy0, tanque1.w, tanque1.h);
@@ -747,6 +747,14 @@ function draw() {
           let anchor = groundFireAnchors[damagedIdx];
           let smokeOffsetX = (anchor && isFinite(anchor.x)) ? anchor.x : ((damagedIdx === 0) ? (tanque1.x - 12) : (tanque2.x + 36));
           let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
+          // Efeito de explosão de fogo e fumaça quando bomba atinge tanque (alinhados verticalmente, na base do tanque)
+          const explosionY = p.y + 35; // Ajustado para posição intermediária
+          for (let f = 0; f < 35; f++) {
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2));
+          }
+          // Fumaça alinhada verticalmente com o fogo no ponto de impacto
+          addSmoke(p.x, explosionY, 35, 2.5);
+          // Fumaça adicional leve no anchor para continuidade
           addSmoke(smokeOffsetX, smokeOffsetY, 6, 1.3);
           projeteis.splice(i, 1);
           if (damagedIdx === 0 && vida[damagedIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
@@ -778,6 +786,15 @@ function draw() {
 
       // Remove projétil se sair da tela
       if (p.x < 0 || p.x > width || p.y > height) {
+        // Efeito de fogo e fumaça quando bomba de avião cai no chão
+        if (p.owner === 0 && p.y >= height) {
+          // Adicionar partículas de fogo (aumentado para 35)
+          for (let f = 0; f < 35; f++) {
+            fireParticles.push(new FireParticle(p.x, height - 5, 2.2));
+          }
+          // Adicionar fumaça (aumentado para 22)
+          addSmoke(p.x, height - 5, 22, 2.0);
+        }
         // simply remove the projectile; turn resolution is handled centrally below
         projeteis.splice(i, 1);
       }
