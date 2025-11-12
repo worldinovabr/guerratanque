@@ -1092,7 +1092,7 @@ if (typeof atualizarBarraVida !== 'function') {
           projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
 
           // Reagenda o próximo disparo para um tempo aleatório entre ~300ms e ~2s
-          active._nextDrop = ts + (300 + Math.random() * 1700);
+          active._nextDrop = ts + (400 + Math.random() * 2700);
         }
       } catch (err) {
         console.warn('plane drop error', err);
