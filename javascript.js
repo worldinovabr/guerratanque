@@ -246,9 +246,19 @@ class GroundFire {
     this.smokeIntensity = (typeof opts.smokeIntensity === 'number') ? opts.smokeIntensity : 0.55;
     this.fireSizeScale = (typeof opts.fireSizeScale === 'number') ? opts.fireSizeScale : 1;
     this.tick = 0;
+    this.tankIndex = opts.tankIndex; // índice do tanque (0 ou 1) para acompanhar sua posição
+    this.offsetX = opts.offsetX || 0; // offset X relativo ao tanque
+    this.offsetY = opts.offsetY || 0; // offset Y relativo ao tanque
   }
 
   update() {
+    // Se está vinculado a um tanque, atualiza posição baseada no tanque
+    if (this.tankIndex !== undefined) {
+      const tank = this.tankIndex === 0 ? tanque1 : tanque2;
+      this.x = tank.x + this.offsetX;
+      this.y = tank.y + this.offsetY;
+    }
+    
     this.tick++;
     // spawn smoke every few frames
     if (this.tick % this.rate === 0) {
@@ -466,8 +476,16 @@ function setup() {
   try {
     setGroundFireAnchor(0, tanque1.x - 88 * scale, tanque1.y + 10 * scale);
     setGroundFireAnchor(1, tanque2.x + 86 * scale, tanque2.y + 10 * scale);
-    createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
-    createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { rate: isMobile ? 8 : 5, fireRate: isMobile ? 6 : 3 });
+    // Fogo do tanque 1 - fixo no cenário (NÃO acompanha o tanque)
+    createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { 
+      rate: isMobile ? 8 : 5, 
+      fireRate: isMobile ? 6 : 3
+    });
+    // Fogo do tanque 2 - fixo no cenário (NÃO acompanha o tanque)
+    createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { 
+      rate: isMobile ? 8 : 5, 
+      fireRate: isMobile ? 6 : 3
+    });
     const midX = Math.round((tanque1.x + tanque2.x) / 2);
     const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 5 * scale);
     setGroundFireAnchor(2, midX, midY);
@@ -482,9 +500,8 @@ function draw() {
   background(30);
   image(fundoImg, 0, 0, width, height);
   
-  // Atualiza geradores de fogo no chão e partículas de fogo; depois atualiza fumaça
+  // Atualiza geradores de fogo no chão
   updateGroundFires();
-  drawFireParticles();
   // Atualiza partículas de fumaça (remove mortas, as novas fumaças podem ter sido adicionadas acima)
   updateSmoke();
 
@@ -520,7 +537,7 @@ function draw() {
   const ox1 = 0; // no horizontal oscillation for engine hum
   const oy1 = Math.sin(t * e1.freq + e1.phase) * e1.amp;
 
-  if (vida[1] <= 0 || tanque2QuebradoTemp) {
+  if (vida[1] <= 0) {
     push();
     translate(tanque2.x + ox1, tanque2.y + oy1);
     scale(-1, 1);
@@ -748,7 +765,7 @@ function draw() {
           let smokeOffsetX = (anchor && isFinite(anchor.x)) ? anchor.x : ((damagedIdx === 0) ? (tanque1.x - 12) : (tanque2.x + 36));
           let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
           // Efeito de explosão de fogo e fumaça quando bomba atinge tanque (alinhados verticalmente, na base do tanque)
-          const explosionY = p.y + 35; // Ajustado para posição intermediária
+          const explosionY = p.y + 100; // 100 pixels abaixo - na base do tanque
           for (let f = 0; f < 35; f++) {
             fireParticles.push(new FireParticle(p.x, explosionY, 2.2));
           }
@@ -756,6 +773,41 @@ function draw() {
           addSmoke(p.x, explosionY, 35, 2.5);
           // Fumaça adicional leve no anchor para continuidade
           addSmoke(smokeOffsetX, smokeOffsetY, 6, 1.3);
+          
+          // Adicionar fogo contínuo que acompanha o tanque atingido
+          const tankObj = (damagedIdx === 0 ? tanque1 : tanque2);
+          // Calcula offset relativo à posição atual do tanque
+          const offsetXFire = p.x - tankObj.x;
+          
+          // Calcula offset Y baseado na proximidade do centro do tanque
+          // Quanto mais perto do centro, mais acima fica o fogo
+          const distanceFromCenter = Math.abs(offsetXFire);
+          const maxDistance = tankObj.w / 2; // metade da largura do tanque
+          const proximityRatio = 1 - Math.min(distanceFromCenter / maxDistance, 1);
+          // Varia de 30 (nas bordas) até -20 (no centro) - mais acima quando no meio
+          const offsetYFire = 30 - (proximityRatio * 50);
+          
+          const fireEmitter = new GroundFire(p.x, tankObj.y + offsetYFire, { 
+            rate: 6, 
+            fireRate: 4, 
+            smokeCount: 1, 
+            smokeIntensity: 0.4, 
+            fireSizeScale: 0.7,
+            tankIndex: damagedIdx, // vincula ao tanque
+            offsetX: offsetXFire, // offset X relativo ao centro do tanque
+            offsetY: offsetYFire // offset Y relativo ao centro do tanque
+          });
+          groundFires.push(fireEmitter);
+          
+          // Adicionar pequenas chamas contínuas e visíveis sobre o tanque atingido
+          for (let flame = 0; flame < 12; flame++) {
+            let fx = p.x + random(-20, 20);
+            let fy = p.y + random(-8, 8);
+            let fire = new FireParticle(fx, fy, 1.2);
+            fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
+            fire.life = Math.floor(random(25, 45)); // vida mais longa
+            fireParticles.push(fire);
+          }
           projeteis.splice(i, 1);
           if (damagedIdx === 0 && vida[damagedIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (damagedIdx === 1 && vida[damagedIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
@@ -771,7 +823,51 @@ function draw() {
           setTimeout(() => atualizarBarraVida(adversarioIdx === 0 ? 'vida1' : 'vida2', vida[adversarioIdx]), 50);
           explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 };
           explosaoTimer = 40;
+          
+          // Efeito de explosão de fogo e fumaça quando tiro de tanque atinge adversário
+          const explosionY = p.y + 100; // 100 pixels abaixo - na base do tanque
+          for (let f = 0; f < 35; f++) {
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2));
+          }
+          // Fumaça alinhada verticalmente com o fogo no ponto de impacto
+          addSmoke(p.x, explosionY, 35, 2.5);
           addSmoke(adversarioTank.x, adversarioTank.y, 10, 1.8);
+          
+          // Adicionar fogo contínuo que acompanha o tanque atingido
+          const tankObj = adversarioTank;
+          // Calcula offset relativo à posição atual do tanque
+          const offsetXFire = p.x - tankObj.x;
+          
+          // Calcula offset Y baseado na proximidade do centro do tanque
+          // Quanto mais perto do centro, mais acima fica o fogo
+          const distanceFromCenter = Math.abs(offsetXFire);
+          const maxDistance = tankObj.w / 2; // metade da largura do tanque
+          const proximityRatio = 1 - Math.min(distanceFromCenter / maxDistance, 1);
+          // Varia de 30 (nas bordas) até -20 (no centro) - mais acima quando no meio
+          const offsetYFire = 30 - (proximityRatio * 50);
+          
+          const fireEmitter = new GroundFire(p.x, tankObj.y + offsetYFire, { 
+            rate: 6, 
+            fireRate: 4, 
+            smokeCount: 1, 
+            smokeIntensity: 0.4, 
+            fireSizeScale: 0.7,
+            tankIndex: adversarioIdx, // vincula ao tanque
+            offsetX: offsetXFire, // offset X relativo ao centro do tanque
+            offsetY: offsetYFire // offset Y relativo ao centro do tanque
+          });
+          groundFires.push(fireEmitter);
+          
+          // Adicionar pequenas chamas contínuas e visíveis sobre o tanque atingido
+          for (let flame = 0; flame < 12; flame++) {
+            let fx = p.x + random(-20, 20);
+            let fy = p.y + random(-8, 8);
+            let fire = new FireParticle(fx, fy, 1.2);
+            fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
+            fire.life = Math.floor(random(25, 45)); // vida mais longa
+            fireParticles.push(fire);
+          }
+          
           projeteis.splice(i, 1);
           if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
@@ -822,6 +918,9 @@ function draw() {
   
   // Renderiza todas as partículas de fumaça
   displaySmoke();
+  
+  // Renderiza partículas de fogo POR ÚLTIMO para ficarem visíveis sobre os tanques
+  drawFireParticles();
 }
 
 // Função para alterar valores dos controles
@@ -863,15 +962,18 @@ function disparar() {
   let dy = y - origem.y;
   let angulo = atan2(dy, dx);
 
-      const fatorVelocidade = 0.5;
-    const proj = {
-      x: origem.x,
-      y: origem.y,
-      vx: cos(angulo) * potencia * fatorVelocidade,
-      vy: sin(angulo) * potencia * fatorVelocidade,
-      gravidade: 0.2,
-      owner: turno
-    };
+  // Tanque 2 tem potência maior (1.4x mais forte)
+  const fatorVelocidade = turno === 2 ? 0.7 : 0.5;
+  // Fator Y maior para o tanque 2 (tiros vão mais alto)
+  const fatorY = turno === 2 ? 1.3 : 1.0;
+  const proj = {
+    x: origem.x,
+    y: origem.y,
+    vx: cos(angulo) * potencia * fatorVelocidade,
+    vy: sin(angulo) * potencia * fatorVelocidade * fatorY,
+    gravidade: 0.2,
+    owner: turno
+  };
   projeteis.push(proj);
   // mark that this player's shot is pending a turn change when it resolves
   pendingTurnOwner = turno;
