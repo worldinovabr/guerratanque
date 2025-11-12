@@ -90,6 +90,66 @@ function addSmoke(x, y, count = 1, intensity = 1) {
   }
 }
 
+// Small horizontal engine smoke particles (lighter and more transparent)
+class EngineSmokeParticle {
+  constructor(x, y, dir = 1) {
+    this.x = x;
+    this.y = y;
+    // make the engine smoke long and thin (stick-like)
+    // slightly stronger horizontal velocity so the puff stretches into a thin trail
+    this.vx = -dir * (0.6 + random(0, 0.6));
+    // keep very small vertical jitter so the stick remains mostly horizontal
+    this.vy = random(-0.02, 0.02);
+  // base size controls the thickness; increase slightly to make the stick a bit thicker
+  this.size = random(3, 6);
+    // longer life so the stick extends and remains visible longer
+    this.maxLife = Math.floor(random(40, 90));
+    this.life = this.maxLife;
+  // slightly stronger alpha so the thicker smoke is visible but still translucent
+  this.initAlpha = random(50, 130);
+    this.alpha = this.initAlpha;
+    // minimal rotation to keep the stick mostly horizontal
+    this.rotation = random(-0.03, 0.03);
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    // slight slow-down of horizontal component so puffs spread out gently
+    this.vx *= 0.995;
+    this.life--;
+    // fade using the stored initial alpha and actual lifespan
+    this.alpha = map(this.life, 0, this.maxLife, 0, this.initAlpha);
+    this.rotation *= 0.995;
+  }
+
+  display() {
+    push();
+    translate(this.x, this.y);
+    rotate(this.rotation);
+    noStroke();
+  // stick-like elongated puff: long but slightly thicker than before
+  const w = this.size * 12; // length of the stick
+  const h = Math.max(2, this.size * 0.9); // thicker height for a chunkier stick
+  fill(255, this.alpha * 0.95);
+  ellipse(0, 0, w, h);
+  // inner faint core for softness, slightly stronger for thicker smoke
+  fill(255, this.alpha * 0.45);
+  ellipse(0, 0, Math.max(1, w * 0.6), Math.max(1, h * 0.6));
+    pop();
+  }
+
+  isDead() {
+    return this.life <= 0 || this.alpha <= 2;
+  }
+}
+
+function addEngineSmoke(x, y, dir = 1, count = 1) {
+  for (let i = 0; i < count; i++) {
+    smokeParticles.push(new EngineSmokeParticle(x + random(-3, 3), y + random(-1.5, 1.5), dir));
+  }
+}
+
 // --- Canvas ground fire: short-lived flame particles + spawns smoke via addSmoke ---
 let fireParticles = [];
 let groundFires = [];
@@ -1013,6 +1073,36 @@ if (typeof atualizarBarraVida !== 'function') {
         }
       } catch (err) {
         console.warn('plane drop error', err);
+      }
+
+      // Engine smoke: emit small horizontal puffs from plane's tail
+      try {
+        const pr = active.getBoundingClientRect();
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+          const cr = canvas.getBoundingClientRect();
+          const centerX = ((pr.left + pr.width/2 - cr.left) / cr.width) * width;
+          const centerY = ((pr.top + pr.height/2 - cr.top) / cr.height) * height;
+          // estimate half-size in canvas units
+          const halfW = (pr.width / cr.width) * (width / 2);
+          const halfH = (pr.height / cr.height) * (height / 2);
+          // engine tail offset: behind the plane relative to direction
+          const tailOffsetX = halfW * 0.55 * (active._dir || 1);
+          const tailOffsetY = halfH * 0.15; // slightly below center
+          const engineX = centerX - tailOffsetX;
+          const engineY = centerY + tailOffsetY;
+
+          if (!active._nextEngineSmoke) active._nextEngineSmoke = ts + 80 + Math.random() * 80;
+          if (ts >= active._nextEngineSmoke) {
+            const cnt = Math.max(1, Math.floor(random(1, 2)));
+            for (let k = 0; k < cnt; k++) {
+              addEngineSmoke(engineX + random(-2, 2), engineY + random(-1, 1), active._dir, 1);
+            }
+            active._nextEngineSmoke = ts + 80 + Math.random() * 160; // jitter interval
+          }
+        }
+      } catch (e) {
+        // decorative smoke may fail silently
       }
 
       if (active._dir === 1 && active._x >= window.innerWidth + BUFFER) {
