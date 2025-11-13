@@ -818,15 +818,13 @@ function draw() {
           let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
           
           // Efeito de explosão de fogo e fumaça quando bomba atinge tanque (alinhados verticalmente, na base do tanque)
-          const explosionY = p.y + (100 * screenScale); // Proporcional ao tamanho da tela
+          const explosionY = p.y + (60 * screenScale); // Um pouco mais acima (era 80)
           const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
           for (let f = 0; f < fireCount; f++) {
             fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
           }
-          // Fumaça alinhada verticalmente com o fogo no ponto de impacto
-          addSmoke(p.x, explosionY, Math.floor(35 * screenScale), 2.5 * screenScale);
-          // Fumaça adicional leve no anchor para continuidade
-          addSmoke(smokeOffsetX, smokeOffsetY, Math.floor(6 * screenScale), 1.3 * screenScale);
+          // Apenas uma fumaça (tamanho reduzido em 50%)
+          addSmoke(p.x, explosionY, Math.floor(8 * screenScale), 0.25 * screenScale);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = (damagedIdx === 0 ? tanque1 : tanque2);
@@ -948,7 +946,11 @@ function draw() {
           // Obter escala da tela
           const screenScale = getScreenScale();
           // No desktop (screenScale = 2.0), reduzir explosão ao cair no chão
-          const explosionScale = screenScale === 2.0 ? 1.2 : screenScale;
+          let explosionScale = screenScale === 2.0 ? 1.2 : screenScale;
+          // Avião 1 (planeDir === 1) tem explosão menor no chão que avião 2
+          if (p.planeDir === 1) {
+            explosionScale *= 0.75; // Reduz em 25% a explosão do avião 1
+          }
           const fireCount = Math.floor(35 * explosionScale);
           // Adicionar partículas de fogo proporcionais
           for (let f = 0; f < fireCount; f++) {
@@ -1029,10 +1031,9 @@ function disparar() {
   let dy = y - origem.y;
   let angulo = atan2(dy, dx);
 
-  // Tanque 2 tem potência maior (1.4x mais forte)
-  const fatorVelocidade = turno === 2 ? 0.7 : 0.5;
-  // Fator Y maior para o tanque 2 (tiros vão mais alto)
-  const fatorY = turno === 2 ? 1.3 : 1.0;
+  // Ambos os tanques têm a mesma potência
+  const fatorVelocidade = 0.5;
+  const fatorY = 1.0;
   const proj = {
     x: origem.x,
     y: origem.y,
@@ -1312,27 +1313,31 @@ if (typeof atualizarBarraVida !== 'function') {
   // schedule the first drop and subsequent drops at a faster random interval (~300ms..2000ms)
     if (!active._nextDrop) active._nextDrop = ts + (300 + Math.random() * 1700);
   if (ts >= active._nextDrop) {
-          const pr = active.getBoundingClientRect();
-          const canvas = document.querySelector('canvas');
-          // if canvas isn't available yet (race on load), provide a safe fallback
-          const cr = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+          // Verificar se já existe uma bomba ativa do avião (owner: 0)
+          const hasActiveBomb = projeteis.some(p => p.owner === 0);
+          if (!hasActiveBomb) {
+            const pr = active.getBoundingClientRect();
+            const canvas = document.querySelector('canvas');
+            // if canvas isn't available yet (race on load), provide a safe fallback
+            const cr = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
 
-          const originX = ((pr.left - cr.left) / cr.width) * width + pr.width / 2;
-          const originY = ((pr.top - cr.top) / cr.height) * height + pr.height / 2;
+            const originX = ((pr.left - cr.left) / cr.width) * width + pr.width / 2;
+            const originY = ((pr.top - cr.top) / cr.height) * height + pr.height / 2;
 
-          const targetX = Math.random() * width;
-          const targetY = Math.random() * height;
+            const targetX = Math.random() * width;
+            const targetY = Math.random() * height;
 
-          const dx = targetX - originX;
-          const dy = targetY - originY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+            const dx = targetX - originX;
+            const dy = targetY - originY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
-          const speed = 3; // Velocidade normal
-          const vx = (dx / distance) * speed;
-          const vy = (dy / distance) * speed;
+            const speed = 3; // Velocidade normal
+            const vx = (dx / distance) * speed;
+            const vy = (dy / distance) * speed;
 
-          projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0 });
-
+            // owner: 0 = bomba de avião, planeDir identifica qual avião (-1 = aviao2)
+            projeteis.push({ x: originX, y: originY, vx: vx, vy: vy, gravidade: 0.2, owner: 0, planeDir: active._dir });
+          }
           // Reagenda o próximo disparo para um tempo aleatório entre ~300ms e ~2s
           active._nextDrop = ts + (650 + Math.random() * 4700);
         }
