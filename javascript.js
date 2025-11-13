@@ -881,15 +881,14 @@ function draw() {
           explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 * screenScale };
           explosaoTimer = 40;
           
-          // Efeito de explosão de fogo e fumaça quando tiro de tanque atinge adversário
-          const explosionY = p.y + (100 * screenScale); // Proporcional ao tamanho da tela
+          // Efeito de explosão de fogo e fumaça quando tiro de tanque atinge adversário (no ponto exato do impacto)
           const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
           for (let f = 0; f < fireCount; f++) {
-            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
+            fireParticles.push(new FireParticle(p.x, p.y, 2.2 * screenScale));
           }
-          // Fumaça alinhada verticalmente com o fogo no ponto de impacto
-          addSmoke(p.x, explosionY, Math.floor(35 * screenScale), 2.5 * screenScale);
-          addSmoke(adversarioTank.x, adversarioTank.y, Math.floor(10 * screenScale), 1.8 * screenScale);
+          // Fumaça alinhada verticalmente com o fogo no ponto de impacto (tamanho reduzido)
+          addSmoke(p.x, p.y, Math.floor(15 * screenScale), 0.9 * screenScale);
+          addSmoke(adversarioTank.x, adversarioTank.y, Math.floor(5 * screenScale), 0.7 * screenScale);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = adversarioTank;
