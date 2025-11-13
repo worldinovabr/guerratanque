@@ -46,6 +46,21 @@ let clickTimer = null;
 
 // Sistema de fumaça realista
 let smokeParticles = [];
+
+// Função para calcular fator de escala baseado na resolução atual
+function getScreenScale() {
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  const is800x600 = window.innerWidth === 800 && window.innerHeight === 600;
+  
+  if (is800x600) {
+    return 1.0;
+  } else if (isMobile) {
+    return 0.5; // Mobile usa escala menor para elementos visuais
+  } else {
+    return 2.0; // Desktop usa escala maior
+  }
+}
+
 class SmokeParticle {
   constructor(x, y, intensity = 1, colorBase = null) {
     this.x = x;
@@ -631,6 +646,9 @@ function draw() {
 
   // Fallen broken planes: update physics and draw them (they fall with gravity until removed)
   if (fallenPlanes.length > 0) {
+    // Obter escala para fumaça dos aviões
+    const screenScale = getScreenScale();
+    
     for (let k = fallenPlanes.length - 1; k >= 0; k--) {
       const fp = fallenPlanes[k];
       // physics
@@ -639,9 +657,9 @@ function draw() {
       fp.vy += fp.grav;
       fp.rot += fp.rotV;
       
-      // Gera fumaça do avião caindo
+      // Gera fumaça do avião caindo (proporcional)
       if (frameCount % 3 === 0) {
-        addSmoke(fp.x, fp.y, 2, 1.2);
+        addSmoke(fp.x, fp.y, Math.floor(2 * screenScale), 1.2 * screenScale);
       }
       
       // fade out when below screen or after timeout
@@ -710,17 +728,20 @@ function draw() {
           // remove projectile
           projeteis.splice(i, 1);
 
+          // Obter escala da tela para elementos responsivos
+          const screenScale = getScreenScale();
+
           // first hit: darken + show small defense effect
           if (planeEl._hp > 0) {
             planeEl.style.opacity = '0.6';
             planeEl.style.filter = 'brightness(0.7)';
-            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 100, fade: true, alpha: 255, fadeStep: 10, img: defesaImg };
-            addSmoke(planeHitbox.centerX, planeHitbox.centerY, 3, 0.8);
+            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 100 * screenScale, fade: true, alpha: 255, fadeStep: 10, img: defesaImg };
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.floor(3 * screenScale), 0.8 * screenScale);
           } else {
             // destroyed
-            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 120 };
+            explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 120 * screenScale };
             explosaoTimer = 40;
-            addSmoke(planeHitbox.centerX, planeHitbox.centerY, 8, 1.5);
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.floor(8 * screenScale), 1.5 * screenScale);
             if (p.owner === 1 || p.owner === 2) {
               placar[p.owner - 1]++;
               document.getElementById('p1score').textContent = placar[0];
@@ -732,7 +753,7 @@ function draw() {
               const cr = planeHitbox.rawCr;
               const planeWCanvas = (pr.width / cr.width) * width;
               const planeHCanvas = (pr.height / cr.height) * height;
-              const sizeForPlane = Math.max(64, Math.min(220, Math.max(planeWCanvas, planeHCanvas) * 1.1));
+              const sizeForPlane = Math.max(64 * screenScale, Math.min(220 * screenScale, Math.max(planeWCanvas, planeHCanvas) * 1.1));
               const frag = {
                 x: planeHitbox.centerX,
                 y: planeHitbox.centerY,
@@ -786,20 +807,26 @@ function draw() {
         if (damagedIdx !== -1) {
           vida[damagedIdx] = Math.max(0, vida[damagedIdx] - 10);
           setTimeout(() => atualizarBarraVida(damagedIdx === 0 ? 'vida1' : 'vida2', vida[damagedIdx]), 50);
-          explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 };
+          
+          // Obter escala da tela para elementos responsivos
+          const screenScale = getScreenScale();
+          
+          explosao = { x: (damagedIdx === 0 ? tanque1.x : tanque2.x), y: (damagedIdx === 0 ? tanque1.y : tanque2.y), size: 120 * screenScale };
           explosaoTimer = 40;
           let anchor = groundFireAnchors[damagedIdx];
           let smokeOffsetX = (anchor && isFinite(anchor.x)) ? anchor.x : ((damagedIdx === 0) ? (tanque1.x - 12) : (tanque2.x + 36));
           let smokeOffsetY = (anchor && isFinite(anchor.y)) ? anchor.y : (damagedIdx === 0 ? tanque1.y : tanque2.y);
+          
           // Efeito de explosão de fogo e fumaça quando bomba atinge tanque (alinhados verticalmente, na base do tanque)
-          const explosionY = p.y + 100; // 100 pixels abaixo - na base do tanque
-          for (let f = 0; f < 35; f++) {
-            fireParticles.push(new FireParticle(p.x, explosionY, 2.2));
+          const explosionY = p.y + (100 * screenScale); // Proporcional ao tamanho da tela
+          const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
+          for (let f = 0; f < fireCount; f++) {
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
           }
           // Fumaça alinhada verticalmente com o fogo no ponto de impacto
-          addSmoke(p.x, explosionY, 35, 2.5);
+          addSmoke(p.x, explosionY, Math.floor(35 * screenScale), 2.5 * screenScale);
           // Fumaça adicional leve no anchor para continuidade
-          addSmoke(smokeOffsetX, smokeOffsetY, 6, 1.3);
+          addSmoke(smokeOffsetX, smokeOffsetY, Math.floor(6 * screenScale), 1.3 * screenScale);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = (damagedIdx === 0 ? tanque1 : tanque2);
@@ -812,14 +839,14 @@ function draw() {
           const maxDistance = tankObj.w / 2; // metade da largura do tanque
           const proximityRatio = 1 - Math.min(distanceFromCenter / maxDistance, 1);
           // Varia de 30 (nas bordas) até -20 (no centro) - mais acima quando no meio
-          const offsetYFire = 30 - (proximityRatio * 50);
+          const offsetYFire = (30 - (proximityRatio * 50)) * screenScale;
           
           const fireEmitter = new GroundFire(p.x, tankObj.y + offsetYFire, { 
             rate: 6, 
             fireRate: 4, 
             smokeCount: 1, 
-            smokeIntensity: 0.4, 
-            fireSizeScale: 0.7,
+            smokeIntensity: 0.4 * screenScale, 
+            fireSizeScale: 0.7 * screenScale,
             tankIndex: damagedIdx, // vincula ao tanque
             offsetX: offsetXFire, // offset X relativo ao centro do tanque
             offsetY: offsetYFire // offset Y relativo ao centro do tanque
@@ -827,10 +854,11 @@ function draw() {
           groundFires.push(fireEmitter);
           
           // Adicionar pequenas chamas contínuas e visíveis sobre o tanque atingido
-          for (let flame = 0; flame < 12; flame++) {
-            let fx = p.x + random(-20, 20);
-            let fy = p.y + random(-8, 8);
-            let fire = new FireParticle(fx, fy, 1.2);
+          const flameCount = Math.floor(12 * screenScale);
+          for (let flame = 0; flame < flameCount; flame++) {
+            let fx = p.x + random(-20 * screenScale, 20 * screenScale);
+            let fy = p.y + random(-8 * screenScale, 8 * screenScale);
+            let fire = new FireParticle(fx, fy, 1.2 * screenScale);
             fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
             fire.life = Math.floor(random(25, 45)); // vida mais longa
             fireParticles.push(fire);
@@ -848,17 +876,22 @@ function draw() {
           if (p.owner === 1 || p.owner === 2) { placar[p.owner - 1]++; document.getElementById('p1score').textContent = placar[0]; document.getElementById('p2score').textContent = placar[1]; }
           vida[adversarioIdx] = Math.max(0, vida[adversarioIdx] - 10);
           setTimeout(() => atualizarBarraVida(adversarioIdx === 0 ? 'vida1' : 'vida2', vida[adversarioIdx]), 50);
-          explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 };
+          
+          // Obter escala da tela para elementos responsivos
+          const screenScale = getScreenScale();
+          
+          explosao = { x: adversarioTank.x, y: adversarioTank.y, size: 120 * screenScale };
           explosaoTimer = 40;
           
           // Efeito de explosão de fogo e fumaça quando tiro de tanque atinge adversário
-          const explosionY = p.y + 100; // 100 pixels abaixo - na base do tanque
-          for (let f = 0; f < 35; f++) {
-            fireParticles.push(new FireParticle(p.x, explosionY, 2.2));
+          const explosionY = p.y + (100 * screenScale); // Proporcional ao tamanho da tela
+          const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
+          for (let f = 0; f < fireCount; f++) {
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
           }
           // Fumaça alinhada verticalmente com o fogo no ponto de impacto
-          addSmoke(p.x, explosionY, 35, 2.5);
-          addSmoke(adversarioTank.x, adversarioTank.y, 10, 1.8);
+          addSmoke(p.x, explosionY, Math.floor(35 * screenScale), 2.5 * screenScale);
+          addSmoke(adversarioTank.x, adversarioTank.y, Math.floor(10 * screenScale), 1.8 * screenScale);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = adversarioTank;
@@ -871,14 +904,14 @@ function draw() {
           const maxDistance = tankObj.w / 2; // metade da largura do tanque
           const proximityRatio = 1 - Math.min(distanceFromCenter / maxDistance, 1);
           // Varia de 30 (nas bordas) até -20 (no centro) - mais acima quando no meio
-          const offsetYFire = 30 - (proximityRatio * 50);
+          const offsetYFire = (30 - (proximityRatio * 50)) * screenScale;
           
           const fireEmitter = new GroundFire(p.x, tankObj.y + offsetYFire, { 
             rate: 6, 
             fireRate: 4, 
             smokeCount: 1, 
-            smokeIntensity: 0.4, 
-            fireSizeScale: 0.7,
+            smokeIntensity: 0.4 * screenScale, 
+            fireSizeScale: 0.7 * screenScale,
             tankIndex: adversarioIdx, // vincula ao tanque
             offsetX: offsetXFire, // offset X relativo ao centro do tanque
             offsetY: offsetYFire // offset Y relativo ao centro do tanque
@@ -886,10 +919,11 @@ function draw() {
           groundFires.push(fireEmitter);
           
           // Adicionar pequenas chamas contínuas e visíveis sobre o tanque atingido
-          for (let flame = 0; flame < 12; flame++) {
-            let fx = p.x + random(-20, 20);
-            let fy = p.y + random(-8, 8);
-            let fire = new FireParticle(fx, fy, 1.2);
+          const flameCount = Math.floor(12 * screenScale);
+          for (let flame = 0; flame < flameCount; flame++) {
+            let fx = p.x + random(-20 * screenScale, 20 * screenScale);
+            let fy = p.y + random(-8 * screenScale, 8 * screenScale);
+            let fire = new FireParticle(fx, fy, 1.2 * screenScale);
             fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
             fire.life = Math.floor(random(25, 45)); // vida mais longa
             fireParticles.push(fire);
@@ -911,12 +945,17 @@ function draw() {
       if (p.x < 0 || p.x > width || p.y > height) {
         // Efeito de fogo e fumaça quando bomba de avião cai no chão
         if (p.owner === 0 && p.y >= height) {
-          // Adicionar partículas de fogo (aumentado para 35)
-          for (let f = 0; f < 35; f++) {
-            fireParticles.push(new FireParticle(p.x, height - 5, 2.2));
+          // Obter escala da tela
+          const screenScale = getScreenScale();
+          // No desktop (screenScale = 2.0), reduzir explosão ao cair no chão
+          const explosionScale = screenScale === 2.0 ? 1.2 : screenScale;
+          const fireCount = Math.floor(35 * explosionScale);
+          // Adicionar partículas de fogo proporcionais
+          for (let f = 0; f < fireCount; f++) {
+            fireParticles.push(new FireParticle(p.x, height - 5, 2.2 * explosionScale));
           }
-          // Adicionar fumaça (aumentado para 22)
-          addSmoke(p.x, height - 5, 22, 2.0);
+          // Adicionar fumaça proporcional
+          addSmoke(p.x, height - 5, Math.floor(22 * explosionScale), 2.0 * explosionScale);
         }
         // simply remove the projectile; turn resolution is handled centrally below
         projeteis.splice(i, 1);
@@ -929,18 +968,19 @@ function draw() {
     }
   }
   
-  // Fumaça contínua dos tanques destruídos
+  // Fumaça contínua dos tanques destruídos (proporcional ao tamanho da tela)
+  const screenScale = getScreenScale();
   if (vida[0] <= 0 && frameCount % 8 === 0) {
     const a0 = groundFireAnchors[0];
     const sx0 = (a0 && isFinite(a0.x)) ? a0.x : (tanque1.x - 24);
     const sy0 = (a0 && isFinite(a0.y)) ? (a0.y - 20) : (tanque1.y - 20);
-    addSmoke(sx0, sy0, 1, 0.8);
+    addSmoke(sx0, sy0, 1, 0.8 * screenScale);
   }
   if (vida[1] <= 0 && frameCount % 8 === 0) {
     const a1 = groundFireAnchors[1];
     const sx1 = (a1 && isFinite(a1.x)) ? a1.x : (tanque2.x + 24);
     const sy1 = (a1 && isFinite(a1.y)) ? (a1.y - 20) : (tanque2.y - 20);
-    addSmoke(sx1, sy1, 1, 0.8);
+    addSmoke(sx1, sy1, 1, 0.8 * screenScale);
   }
   
   // Renderiza todas as partículas de fumaça
@@ -1542,6 +1582,11 @@ function resetarEstilosBotoes() {
 window.addEventListener('load', function() {
   // Detector de cliques múltiplos (2 ou 3 cliques)
   document.addEventListener('click', function(e) {
+    // Ignorar cliques nos botões de controle para não interferir
+    if (e.target.closest('.controls-container button')) {
+      return;
+    }
+    
     clickCount++;
     
     // Limpar timer anterior
@@ -1549,11 +1594,14 @@ window.addEventListener('load', function() {
       clearTimeout(clickTimer);
     }
     
-    // Timer para resetar contagem após 500ms
+    // Timer para resetar contagem após 400ms (janela para múltiplos cliques)
     clickTimer = setTimeout(function() {
       // Processar baseado no número de cliques
       if (clickCount === 2) {
-        // Duplo clique: toggle visibilidade normal
+        // Duplo clique: disparar tiro do tanque atual
+        disparar();
+      } else if (clickCount === 3) {
+        // Triplo clique: toggle visibilidade dos controles
         if (botaoAtirarSolo) {
           // Se está em modo solo, volta ao normal
           mostrarBotoes();
@@ -1562,21 +1610,19 @@ window.addEventListener('load', function() {
         } else {
           mostrarBotoes();
         }
-      } else if (clickCount === 3) {
-        // Triplo clique: mostrar apenas botão atirar
-        mostrarApenasAtirar();
       }
       
       // Resetar contagem
       clickCount = 0;
-    }, 500);
+    }, 400);
   });
   
   // Prevenir que cliques nos botões interfiram com a contagem
   const allButtons = document.querySelectorAll('.controls-container button');
   allButtons.forEach(button => {
     button.addEventListener('click', function(e) {
-      // Não fazer stopPropagation para permitir a contagem de cliques
+      // Parar propagação para não contar cliques nos botões
+      e.stopPropagation();
     });
   });
 });
