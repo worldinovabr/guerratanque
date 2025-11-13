@@ -453,17 +453,27 @@ function preload() {
 
 function setup() {
   const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  const is800x600 = window.innerWidth === 800 && window.innerHeight === 600;
 
-  // Desktop: canvas (1600x600), Mobile: canvas padrão (800x400)
-  if (isMobile) {
+  // 800x600: canvas específico, Desktop: canvas (1600x600), Mobile: canvas padrão (800x400)
+  if (is800x600) {
+    createCanvas(800, 600);
+  } else if (isMobile) {
     createCanvas(800, 400);
   } else {
     createCanvas(1600, 600);
   }
 
   // Ajusta posições e tamanhos dos tanques proporcionalmente ao canvas
-  const scale = isMobile ? 1 : 2.0;
-  const yOffset = isMobile ? 0 : -100; // ajuste para compensar a altura menor
+  let scale, yOffset;
+  if (is800x600) {
+    scale = 1.0;
+    yOffset = 100; // ajuste para centralizar verticalmente em 800x600
+  } else {
+    scale = isMobile ? 1 : 2.0;
+    yOffset = isMobile ? 0 : -100;
+  }
+  
   tanque1 = { x: 150 * scale, y: (315 * scale) + yOffset, w: 90 * scale, h: 135 * scale };
   tanque2 = { x: 700 * scale, y: (315 * scale) + yOffset, w: 110 * scale, h: 135 * scale };
   vida = [100, 100];
@@ -476,20 +486,37 @@ function setup() {
   try {
     setGroundFireAnchor(0, tanque1.x - 88 * scale, tanque1.y + 10 * scale);
     setGroundFireAnchor(1, tanque2.x + 86 * scale, tanque2.y + 10 * scale);
+    
+    // Ajusta taxas de fogo baseado na resolução
+    const fireRate = is800x600 ? 7 : (isMobile ? 8 : 5);
+    const fireRateFlames = is800x600 ? 5 : (isMobile ? 6 : 3);
+    
     // Fogo do tanque 1 - fixo no cenário (NÃO acompanha o tanque)
     createGroundFireAt(groundFireAnchors[0].x, groundFireAnchors[0].y, { 
-      rate: isMobile ? 8 : 5, 
-      fireRate: isMobile ? 6 : 3
+      rate: fireRate, 
+      fireRate: fireRateFlames
     });
     // Fogo do tanque 2 - fixo no cenário (NÃO acompanha o tanque)
     createGroundFireAt(groundFireAnchors[1].x, groundFireAnchors[1].y, { 
-      rate: isMobile ? 8 : 5, 
-      fireRate: isMobile ? 6 : 3
+      rate: fireRate, 
+      fireRate: fireRateFlames
     });
     const midX = Math.round((tanque1.x + tanque2.x) / 2);
     const midY = Math.round(Math.min(tanque1.y, tanque2.y) + 5 * scale);
     setGroundFireAnchor(2, midX, midY);
-    createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { rate: isMobile ? 12 : 10, fireRate: isMobile ? 10 : 8, smokeCount: 1, smokeIntensity: isMobile ? 0.25 : 0.35, fireSizeScale: isMobile ? 0.45 : 0.55 });
+    
+    const midFireRate = is800x600 ? 11 : (isMobile ? 12 : 10);
+    const midFireRateFlames = is800x600 ? 9 : (isMobile ? 10 : 8);
+    const midSmokeIntensity = is800x600 ? 0.3 : (isMobile ? 0.25 : 0.35);
+    const midFireScale = is800x600 ? 0.5 : (isMobile ? 0.45 : 0.55);
+    
+    createGroundFireAt(groundFireAnchors[2].x, groundFireAnchors[2].y, { 
+      rate: midFireRate, 
+      fireRate: midFireRateFlames, 
+      smokeCount: 1, 
+      smokeIntensity: midSmokeIntensity, 
+      fireSizeScale: midFireScale 
+    });
   } catch (e) {
     console.warn('Could not create ground fire emitters:', e);
   }
@@ -1004,30 +1031,105 @@ function mudarTurno() {
 }
 
 function recomecarJogo() {
+  // Resetar estado do jogo
   aguardandoRecomecar = false;
   explosao = null;
   explosaoTimer = 0;
+  explosionFrame = 0;
+  
+  // Limpar projéteis
   projeteis = [];
+  pendingTurnOwner = 0;
+  
+  // Resetar turno
   turno = 1;
+  
+  // Resetar vida dos tanques
   vida = [100, 100];
+  tanque1Quebrado = false;
+  tanque2Quebrado = false;
+  tanque1QuebradoTemp = false;
+  tanque2QuebradoTemp = false;
+  
+  // Resetar placar
   placar = [0, 0];
   document.getElementById("p1score").textContent = placar[0];
   document.getElementById("p2score").textContent = placar[1];
+  
+  // Atualizar barras de vida
   atualizarBarraVida('vida1', 100);
   atualizarBarraVida('vida2', 100);
-  // Reset coordinate UI to default starting values
+  
+  // Limpar partículas de fumaça e fogo
+  smokeParticles = [];
+  fireParticles = [];
+  
+  // Limpar aviões caídos
+  fallenPlanes = [];
+  
+  // Limpar emissores de fogo contínuo (mantém apenas os 3 do cenário)
+  // Remove todos os fogos criados por impactos de bombas/tiros
+  if (groundFires.length > 3) {
+    groundFires = groundFires.slice(0, 3);
+  }
+  
+  // Resetar posições dos tanques para inicial
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+  const is800x600 = window.innerWidth === 800 && window.innerHeight === 600;
+  
+  let scale, yOffset;
+  if (is800x600) {
+    scale = 1.0;
+    yOffset = 100;
+  } else {
+    scale = isMobile ? 1 : 2.0;
+    yOffset = isMobile ? 0 : -100;
+  }
+  
+  tanque1.x = 150 * scale;
+  tanque1.y = (315 * scale) + yOffset;
+  tanque2.x = 700 * scale;
+  tanque2.y = (315 * scale) + yOffset;
+  
+  // Resetar controles de interface
   try {
-    const cx = document.getElementById('coordX'); if (cx) cx.textContent = '400';
-    const cy = document.getElementById('coordY'); if (cy) cy.textContent = '90';
-    const pot = document.getElementById('potencia'); if (pot) pot.textContent = '30';
+    const cx = document.getElementById('coordX'); 
+    if (cx) cx.textContent = '400';
+    const cy = document.getElementById('coordY'); 
+    if (cy) cy.textContent = '90';
+    const pot = document.getElementById('potencia'); 
+    if (pot) pot.textContent = '30';
   } catch (e) {
     console.warn('Could not reset coord UI:', e);
   }
-  document.getElementById("turno").textContent = `Turno: Jogador 1`;
+  
+  // Atualizar texto do turno
+  const turnoEl = document.getElementById("turno");
+  if (turnoEl) turnoEl.textContent = `Turno: Jogador 1`;
+  
+  // Esconder botão recomeçar
   document.getElementById('recomecar').style.display = 'none';
   
   // Resetar visibilidade dos botões
   mostrarBotoes();
+  
+  // Resetar contadores de cliques
+  clickCount = 0;
+  if (clickTimer) {
+    clearTimeout(clickTimer);
+    clickTimer = null;
+  }
+  
+  // Resetar aviões (remover aviões danificados e criar novo)
+  const planesExisting = document.querySelectorAll('.aviao-fly');
+  planesExisting.forEach(plane => {
+    if (plane && plane.parentNode) {
+      plane.parentNode.removeChild(plane);
+    }
+  });
+  
+  // Disparar evento para criar novo avião limpo
+  document.dispatchEvent(new CustomEvent('planeHit', { detail: { delayRespawn: 100 } }));
 }
 // Função para atualizar barras de vida com cache
 if (typeof atualizarBarraVida !== 'function') {
