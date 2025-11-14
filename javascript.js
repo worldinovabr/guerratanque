@@ -1192,7 +1192,8 @@ const planeImages = {
   2: { lr: 'assets/aviao1.png', rl: 'assets/aviao.png' },
   3: { lr: 'assets/aviao3.png', rl: 'assets/aviao3.png' },
   4: { lr: 'assets/aviao4.png', rl: 'assets/aviao4.png' },
-  5: { lr: 'assets/aviao5.png', rl: 'assets/aviao5.png' }
+  5: { lr: 'assets/aviao5.png', rl: 'assets/aviao5.png' },
+  6: { lr: 'assets/aviao6.png', rl: 'assets/aviao6.png' }
 };
 
 // Gerenciar seleção de aviões
