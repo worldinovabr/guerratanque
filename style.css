@@ -149,7 +149,7 @@
   background: linear-gradient(135deg, #4CAF50, #45a049, #66BB6A);
   color: white;
   border: 3px solid #45a049;
-  border-radius: 50px;
+  border-radius: 25px;
   cursor: pointer;
   font-weight: 900;
   text-transform: uppercase;
@@ -1877,6 +1877,12 @@ button#tras:hover {
     width: 85px;
     height: 70px;
   }
+  
+  .start-btn {
+    padding: 14px 45px;
+    font-size: 1.5rem;
+    min-width: 170px;
+  }
 }
 
 /* Tablets pequenos e celulares grandes (landscape) */
@@ -1911,61 +1917,64 @@ button#tras:hover {
   }
   
   .start-btn {
-    padding: 14px 40px;
+    padding: 12px 40px;
     font-size: 1.3rem;
+    min-width: 160px;
   }
 }
 
 /* Celulares */
 @media (max-width: 480px) {
   .plane-menu {
-    gap: 10px;
-    padding: 3px;
+    gap: 12px;
+    padding: 8px;
     overflow-y: auto;
   }
   
   .plane-menu h2 {
-    font-size: 1rem;
-    letter-spacing: 0.3px;
-    margin: 3px 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.4px;
+    margin: 5px 0;
   }
   
   .plane-options {
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding: 3px;
-    max-width: 98%;
+    gap: 8px;
+    padding: 8px;
+    max-width: 95%;
   }
   
   .plane-option {
-    padding: 6px 4px;
+    padding: 10px 8px;
     border-width: 2px;
-    gap: 4px;
-    border-radius: 8px;
+    gap: 6px;
+    border-radius: 10px;
   }
   
   .plane-option img {
-    width: 42px;
-    height: 34px;
+    width: 50px;
+    height: 40px;
   }
   
   .plane-option span {
-    font-size: 0.65rem;
-    letter-spacing: 0.2px;
+    font-size: 0.7rem;
+    letter-spacing: 0.3px;
   }
   
   .plane-option.selected::after {
-    width: 16px;
-    height: 16px;
-    font-size: 0.7rem;
-    top: 2px;
-    right: 2px;
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    top: 3px;
+    right: 3px;
   }
   
   .start-btn {
-    padding: 6px 16px;
+    padding: 8px 35px;
     font-size: 0.8rem;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    border-radius: 15px;
+    min-width: 145px;
   }
 }
 
@@ -2009,7 +2018,10 @@ button#tras:hover {
   }
   
   .start-btn {
-    padding: 5px 14px;
-    font-size: 0.75rem;
+    padding: 5px 30px;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    border-radius: 12px;
+    min-width: 135px;
   }
 }
