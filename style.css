@@ -1919,49 +1919,91 @@ button#tras:hover {
 /* Celulares */
 @media (max-width: 480px) {
   .plane-menu {
-    gap: 20px;
-    padding: 10px;
+    gap: 15px;
+    padding: 5px;
+    overflow-y: auto;
   }
   
   .plane-menu h2 {
-    font-size: 1.5rem;
-    letter-spacing: 1px;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+    margin: 5px 0;
   }
   
   .plane-options {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 8px;
-    max-width: 95%;
+    gap: 8px;
+    padding: 5px;
+    max-width: 98%;
   }
   
   .plane-option {
-    padding: 12px 8px;
+    padding: 8px 5px;
     border-width: 2px;
-    gap: 10px;
+    gap: 6px;
+    border-radius: 10px;
   }
   
   .plane-option img {
-    width: 60px;
-    height: 50px;
+    width: 50px;
+    height: 40px;
   }
   
   .plane-option span {
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
+    font-size: 0.7rem;
+    letter-spacing: 0.3px;
   }
   
   .plane-option.selected::after {
-    width: 22px;
-    height: 22px;
-    font-size: 0.9rem;
-    top: 5px;
-    right: 5px;
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    top: 3px;
+    right: 3px;
   }
   
   .start-btn {
-    padding: 10px 25px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Celulares em modo paisagem */
+@media (max-width: 900px) and (orientation: landscape) {
+  .plane-menu {
+    gap: 10px;
+    padding: 5px;
+  }
+  
+  .plane-menu h2 {
     font-size: 1rem;
-    letter-spacing: 1px;
+    margin: 3px 0;
+  }
+  
+  .plane-options {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 5px;
+    max-width: 98%;
+  }
+  
+  .plane-option {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+  
+  .plane-option img {
+    width: 45px;
+    height: 35px;
+  }
+  
+  .plane-option span {
+    font-size: 0.65rem;
+  }
+  
+  .start-btn {
+    padding: 6px 18px;
+    font-size: 0.85rem;
   }
 }
