@@ -1857,16 +1857,33 @@ button#tras:hover {
 }
 
 /* Responsividade do menu de aviões */
+/* Tablets e telas médias */
 @media (max-width: 1024px) {
   .plane-options {
     grid-template-columns: repeat(3, 1fr);
-    max-width: 90%;
+    max-width: 85%;
+    gap: 20px;
+  }
+  
+  .plane-menu h2 {
+    font-size: 2.5rem;
+  }
+  
+  .plane-option {
+    padding: 22px 18px;
+  }
+  
+  .plane-option img {
+    width: 85px;
+    height: 70px;
   }
 }
 
+/* Tablets pequenos e celulares grandes (landscape) */
 @media (max-width: 768px) {
   .plane-menu {
-    gap: 35px;
+    gap: 30px;
+    padding: 15px;
   }
   
   .plane-menu h2 {
@@ -1876,15 +1893,17 @@ button#tras:hover {
   .plane-options {
     grid-template-columns: repeat(2, 1fr);
     gap: 18px;
-    max-width: 95%;
+    max-width: 90%;
+    padding: 15px;
   }
   
   .plane-option {
-    padding: 18px 15px;
+    padding: 20px 15px;
   }
   
   .plane-option img {
-    width: 70px;
+    width: 75px;
+    height: 65px;
   }
   
   .plane-option span {
@@ -1897,45 +1916,52 @@ button#tras:hover {
   }
 }
 
+/* Celulares */
 @media (max-width: 480px) {
   .plane-menu {
-    gap: 25px;
+    gap: 20px;
+    padding: 10px;
   }
   
   .plane-menu h2 {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     letter-spacing: 1px;
   }
   
   .plane-options {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding: 10px;
+    gap: 10px;
+    padding: 8px;
+    max-width: 95%;
   }
   
   .plane-option {
-    padding: 15px 10px;
+    padding: 12px 8px;
     border-width: 2px;
+    gap: 10px;
   }
   
   .plane-option img {
-    width: 55px;
+    width: 60px;
+    height: 50px;
   }
   
   .plane-option span {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     letter-spacing: 0.5px;
   }
   
   .plane-option.selected::after {
-    width: 25px;
-    height: 25px;
-    font-size: 1rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.9rem;
+    top: 5px;
+    right: 5px;
   }
   
   .start-btn {
-    padding: 12px 30px;
-    font-size: 1.1rem;
+    padding: 10px 25px;
+    font-size: 1rem;
     letter-spacing: 1px;
   }
 }

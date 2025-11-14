@@ -797,8 +797,8 @@ function draw() {
 
       // --- Tank collisions / scoring ---
       const tankHit = (tankObj) => {
-        // Reduzir área de colisão para 50% para tornar mais difícil
-        const hitboxScale = 0.5;
+        // Área de colisão: bombas (owner 0) têm hitbox maior que tiros de tanque
+        const hitboxScale = (p.owner === 0) ? 1.0 : 0.5;
         const hitW = tankObj.w * hitboxScale;
         const hitH = tankObj.h * hitboxScale;
         const hb = { x: tankObj.x - hitW/2, y: tankObj.y - hitH/2, w: hitW, h: hitH };
@@ -868,7 +868,7 @@ function draw() {
           projeteis.splice(i, 1);
           if (damagedIdx === 0 && vida[damagedIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (damagedIdx === 1 && vida[damagedIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
-          if (vida[damagedIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
+          if (vida[damagedIdx] <= 0) { aguardandoRecomecar = true; document.getElementById('recomecar').style.display = 'inline-flex'; }
           continue;
         }
       } else {
@@ -929,7 +929,7 @@ function draw() {
           projeteis.splice(i, 1);
           if (adversarioIdx === 0 && vida[adversarioIdx] > 0) { tanque1QuebradoTemp = true; setTimeout(() => { tanque1QuebradoTemp = false; }, 1000); }
           else if (adversarioIdx === 1 && vida[adversarioIdx] > 0) { tanque2QuebradoTemp = true; setTimeout(() => { tanque2QuebradoTemp = false; }, 1000); }
-            if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; setTimeout(() => { document.getElementById('recomecar').style.display = 'inline-flex'; }, 300); }
+            if (vida[adversarioIdx] <= 0) { aguardandoRecomecar = true; document.getElementById('recomecar').style.display = 'inline-flex'; }
             else {
               mudarTurno();
               pendingTurnOwner = 0;
@@ -1505,6 +1505,7 @@ if (document.readyState === 'interactive' || document.readyState === 'complete')
 function ocultarBotoes() {
   const controls = document.querySelector('.controls-container');
   const recomecar = document.getElementById('recomecar');
+  const actionButtons = document.querySelector('.action-buttons');
   
   if (controls) {
     controls.style.opacity = '0';
@@ -1514,9 +1515,15 @@ function ocultarBotoes() {
     
     // Manter botão recomeçar visível se o jogo terminou
     if (recomecar && aguardandoRecomecar && recomecar.style.display === 'inline-flex') {
+      // Garantir que o container de ações fique visível
+      if (actionButtons) {
+        actionButtons.style.opacity = '1';
+        actionButtons.style.pointerEvents = 'auto';
+      }
       recomecar.style.opacity = '1';
       recomecar.style.pointerEvents = 'auto';
       recomecar.style.visibility = 'visible';
+      recomecar.style.display = 'inline-flex';
     }
   }
 }
