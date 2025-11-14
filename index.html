@@ -67,20 +67,48 @@
     <!-- Botões de Ação -->
     <div class="action-buttons">
       <button id="disparar" onclick="disparar()" title="Disparar">
-        <img src="https://img.icons8.com/ios-filled/32/ffffff/rocket--v1.png" alt="Disparar" class="btn-icone">
+        <span class="btn-3d-icon">🚀</span>
       </button>
       <button id="frente" onclick="moverTanque(1)" title="Mover para frente">
-        <img src="https://img.icons8.com/ios-filled/32/ffffff/forward--v1.png" alt="Frente" class="btn-icone">
+        <span class="btn-3d-icon">▶️</span>
       </button>
       <button id="tras" onclick="moverTanque(-1)" title="Mover para trás">
-        <img src="https://img.icons8.com/ios-filled/32/ffffff/back--v1.png" alt="Trás" class="btn-icone">
+        <span class="btn-3d-icon">◀️</span>
       </button>
       <button id="recomecar" onclick="recomecarJogo()" title="Recomeçar" style="display:none;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"><path fill="#222" d="M12 6V3l-5 5 5 5V8c2.76 0 5 2.24 5 5a5 5 0 1 1-5-5z"/></svg>
+        <span class="btn-3d-icon">🔄</span>
       </button>
     </div>
   </div>
   <h1 id="game-title">ONE COMBAT</h1>
+
+  <!-- Menu de seleção de aviões -->
+  <div id="plane-selection-menu" class="plane-menu">
+    <h2>Escolha seu avião</h2>
+    <div class="plane-options">
+      <div class="plane-option" data-plane="1">
+        <img src="assets/aviao.png" alt="F-16 Falcon">
+        <span>F-16 Falcon</span>
+      </div>
+      <div class="plane-option" data-plane="2">
+        <img src="assets/aviao1.png" alt="Su-27 Flanker">
+        <span>Su-27 Flanker</span>
+      </div>
+      <div class="plane-option" data-plane="3">
+        <img src="assets/aviao3.png" alt="MiG-29 Fulcrum">
+        <span>MiG-29 Fulcrum</span>
+      </div>
+      <div class="plane-option" data-plane="4">
+        <img src="assets/aviao4.png" alt="F-35 Lightning">
+        <span>F-35 Lightning</span>
+      </div>
+      <div class="plane-option" data-plane="5">
+        <img src="assets/aviao5.png" alt="F-22 Raptor">
+        <span>F-22 Raptor</span>
+      </div>
+    </div>
+    <button id="start-game-btn" class="start-btn">Iniciar Jogo</button>
+  </div>
 
   <!-- CSS 3D corner fire (DOM layer) -->
   <!-- css-corner-fire DOM elements removed per user request -->

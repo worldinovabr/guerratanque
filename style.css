@@ -1,3 +1,204 @@
+/* Menu de seleção de aviões */
+.plane-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  gap: 50px;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.plane-menu h2 {
+  color: #fff;
+  font-size: 3rem;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(76, 175, 80, 0.5), 2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(45deg, #4CAF50, #8BC34A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.plane-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 25px;
+  max-width: 1200px;
+  padding: 20px;
+}
+
+.plane-option {
+  cursor: pointer;
+  padding: 25px 20px;
+  background: linear-gradient(145deg, rgba(30, 30, 40, 0.9), rgba(20, 20, 30, 0.9));
+  border: 3px solid rgba(76, 175, 80, 0.3);
+  border-radius: 15px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.plane-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.plane-option:hover::before {
+  left: 100%;
+}
+
+.plane-option:hover {
+  background: linear-gradient(145deg, rgba(40, 40, 50, 0.95), rgba(30, 30, 40, 0.95));
+  border-color: #4CAF50;
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+}
+
+.plane-option.selected {
+  border-color: #00ff00;
+  background: linear-gradient(145deg, rgba(76, 175, 80, 0.3), rgba(56, 142, 60, 0.3));
+  box-shadow: 0 0 30px rgba(76, 175, 80, 0.6), 0 12px 30px rgba(0, 0, 0, 0.5);
+  transform: translateY(-5px);
+}
+
+.plane-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #00ff00;
+  color: #000;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+}
+
+.plane-option img {
+  width: 100px;
+  height: 80px;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+  object-fit: contain;
+  object-position: center;
+  transform: scaleX(1);
+}
+
+.plane-option:hover img {
+  transform: scale(1.1) rotate(2deg);
+}
+
+/* Garantir que todos os aviões apontem para a direita */
+.plane-option img {
+  transform: scaleX(1);
+}
+
+.plane-option:hover img {
+  transform: scale(1.1) rotate(2deg);
+}
+
+.plane-option span {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+  align-self: flex-end;
+  margin-top: auto;
+}
+
+.start-btn {
+  padding: 18px 60px;
+  font-size: 0.8rem;
+  background: linear-gradient(135deg, #4CAF50, #45a049, #66BB6A);
+  color: white;
+  border: 3px solid #45a049;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.4s ease;
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.start-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.start-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.start-btn:hover {
+  background: linear-gradient(135deg, #66BB6A, #4CAF50, #45a049);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(76, 175, 80, 0.7), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+  border-color: #66BB6A;
+}
+
+.start-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.start-btn:disabled {
+  background: linear-gradient(135deg, #555, #444);
+  cursor: not-allowed;
+  opacity: 0.5;
+  border-color: #444;
+  box-shadow: none;
+}
+
 /* Classe utilitária para posicionar o texto do turno do jogador */
 .turno-posicionavel {
   position: absolute;
@@ -1574,8 +1775,32 @@ button#tras:hover {
 }
 
 .controls-container.responsive-bottom .action-buttons button {
-  width: 44px !important;
-  height: 44px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9)) !important;
+  border: 2px solid rgba(76, 175, 80, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.controls-container.responsive-bottom .action-buttons button:hover {
+  background: linear-gradient(135deg, rgba(102, 187, 106, 0.95), rgba(76, 175, 80, 0.95)) !important;
+  border-color: rgba(102, 187, 106, 0.7) !important;
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px) !important;
+}
+
+.controls-container.responsive-bottom .action-buttons button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+}
+
+.btn-3d-icon {
+  font-size: 18px !important;
+  display: inline-block;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  line-height: 1;
 }
 
 /* Medium screens: adjust spacing */
@@ -1631,6 +1856,86 @@ button#tras:hover {
   background: rgba(10,10,10,0.55) !important;
 }
 
+/* Responsividade do menu de aviões */
+@media (max-width: 1024px) {
+  .plane-options {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 90%;
+  }
+}
 
+@media (max-width: 768px) {
+  .plane-menu {
+    gap: 35px;
+  }
+  
+  .plane-menu h2 {
+    font-size: 2rem;
+  }
+  
+  .plane-options {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    max-width: 95%;
+  }
+  
+  .plane-option {
+    padding: 18px 15px;
+  }
+  
+  .plane-option img {
+    width: 70px;
+  }
+  
+  .plane-option span {
+    font-size: 0.95rem;
+  }
+  
+  .start-btn {
+    padding: 14px 40px;
+    font-size: 1.3rem;
+  }
+}
 
-
+@media (max-width: 480px) {
+  .plane-menu {
+    gap: 25px;
+  }
+  
+  .plane-menu h2 {
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+  }
+  
+  .plane-options {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 10px;
+  }
+  
+  .plane-option {
+    padding: 15px 10px;
+    border-width: 2px;
+  }
+  
+  .plane-option img {
+    width: 55px;
+  }
+  
+  .plane-option span {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+  
+  .plane-option.selected::after {
+    width: 25px;
+    height: 25px;
+    font-size: 1rem;
+  }
+  
+  .start-btn {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+}
