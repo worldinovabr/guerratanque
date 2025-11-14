@@ -1919,91 +1919,97 @@ button#tras:hover {
 /* Celulares */
 @media (max-width: 480px) {
   .plane-menu {
-    gap: 15px;
-    padding: 5px;
+    gap: 10px;
+    padding: 3px;
     overflow-y: auto;
   }
   
   .plane-menu h2 {
-    font-size: 1.2rem;
-    letter-spacing: 0.5px;
-    margin: 5px 0;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    margin: 3px 0;
   }
   
   .plane-options {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 5px;
+    gap: 6px;
+    padding: 3px;
     max-width: 98%;
   }
   
   .plane-option {
-    padding: 8px 5px;
+    padding: 6px 4px;
     border-width: 2px;
-    gap: 6px;
-    border-radius: 10px;
+    gap: 4px;
+    border-radius: 8px;
   }
   
   .plane-option img {
-    width: 50px;
-    height: 40px;
+    width: 42px;
+    height: 34px;
   }
   
   .plane-option span {
-    font-size: 0.7rem;
-    letter-spacing: 0.3px;
+    font-size: 0.65rem;
+    letter-spacing: 0.2px;
   }
   
   .plane-option.selected::after {
-    width: 18px;
-    height: 18px;
-    font-size: 0.75rem;
-    top: 3px;
-    right: 3px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+    top: 2px;
+    right: 2px;
   }
   
   .start-btn {
-    padding: 8px 20px;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
   }
 }
 
 /* Celulares em modo paisagem */
 @media (max-width: 900px) and (orientation: landscape) {
   .plane-menu {
-    gap: 10px;
-    padding: 5px;
+    gap: 8px;
+    padding: 3px;
   }
   
   .plane-menu h2 {
-    font-size: 1rem;
-    margin: 3px 0;
+    font-size: 0.9rem;
+    margin: 2px 0;
   }
   
   .plane-options {
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 5px;
+    gap: 5px;
+    padding: 3px;
     max-width: 98%;
   }
   
   .plane-option {
-    padding: 6px 4px;
-    gap: 4px;
+    padding: 5px 3px;
+    gap: 3px;
   }
   
   .plane-option img {
-    width: 45px;
-    height: 35px;
+    width: 38px;
+    height: 30px;
   }
   
   .plane-option span {
+    font-size: 0.6rem;
+  }
+  
+  .plane-option.selected::after {
+    width: 14px;
+    height: 14px;
     font-size: 0.65rem;
   }
   
   .start-btn {
-    padding: 6px 18px;
-    font-size: 0.85rem;
+    padding: 5px 14px;
+    font-size: 0.75rem;
   }
 }
