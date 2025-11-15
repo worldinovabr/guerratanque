@@ -1216,6 +1216,134 @@ document.addEventListener('DOMContentLoaded', function() {
       selectedPlaneType = parseInt(this.getAttribute('data-plane'));
     });
   });
+
+  // Unified behavior: require a desktop-like double-click to start the game.
+  // Add a `dblclick` listener on each plane option so double-clicking a card
+  // selects it and starts the game (same behavior as desktop).
+  (function attachDblclickToPlaneOptions() {
+    planeOptions.forEach(option => {
+      option.addEventListener('dblclick', function (e) {
+        if (gameStarted) return;
+        try {
+          planeOptions.forEach(opt => opt.classList.remove('selected'));
+          this.classList.add('selected');
+          const p = parseInt(this.getAttribute('data-plane'));
+          if (!isNaN(p)) selectedPlaneType = p;
+          handleStartGame(e, this);
+        } catch (err) {
+          console.warn('dblclick plane-option handler error', err);
+        }
+      });
+    });
+  })();
+
+  // Add `dblclick` listeners to the start button and the plane menu so a desktop-like
+  // double-click on either element starts the game in all viewports.
+  (function attachDblclickToStartTargets() {
+    if (startBtn) {
+      startBtn.addEventListener('dblclick', function(e) {
+        if (gameStarted) return;
+        try { handleStartGame(e); } catch (err) { document.dispatchEvent(new CustomEvent('gameStart')); }
+      });
+    }
+    if (planeMenu) {
+      // planeMenu already had a dblclick handler; this ensures the behavior is consistent.
+      planeMenu.addEventListener('dblclick', function(e) {
+        if (gameStarted) return;
+        const opt = (e.target && e.target.closest) ? e.target.closest('.plane-option') : null;
+        if (!opt) return;
+        try {
+          planeOptions.forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          const p = parseInt(opt.getAttribute('data-plane'));
+          if (!isNaN(p)) selectedPlaneType = p;
+          handleStartGame(e, opt);
+        } catch (err) {
+          console.warn('planeMenu dblclick handler error', err);
+        }
+      });
+    }
+  })();
+
+  // Also allow double-clicking the plane-selection container (or any child)
+  // to start the game: if user double-clicks a plane card (or its children),
+  // select it and start the game immediately.
+  // Additionally, attach touch-based double-tap support that mirrors the desktop
+  // `dblclick` behavior so touch devices behave the same.
+  (function attachTouchDoubleTap() {
+    const THRESHOLD = 350; // ms
+    const lastTap = new WeakMap();
+
+    function bindTouch(el, onDouble) {
+      if (!el) return;
+      let timer = null;
+      el.addEventListener('touchend', function(e) {
+        // Prevent the synthetic mouse event from firing twice in some browsers
+        // and allow us to control selection/start behavior precisely.
+        try { e.preventDefault(); } catch (err) {}
+        const now = Date.now();
+        const prev = lastTap.get(el) || 0;
+        if (now - prev <= THRESHOLD) {
+          // double-tap detected
+          lastTap.delete(el);
+          if (timer) { clearTimeout(timer); timer = null; }
+          try {
+            onDouble && onDouble(e, el);
+          } catch (err) {
+            console.warn('touch double-tap handler error', err);
+          }
+        } else {
+          // first tap: record time and apply selection if element is a plane-option
+          lastTap.set(el, now);
+          if (timer) { clearTimeout(timer); }
+          timer = setTimeout(() => { lastTap.delete(el); timer = null; }, THRESHOLD + 20);
+          // If tapping a plane card, select it immediately so user sees feedback
+          if (el.classList && el.classList.contains('plane-option')) {
+            try {
+              planeOptions.forEach(opt => opt.classList.remove('selected'));
+              el.classList.add('selected');
+              const p = parseInt(el.getAttribute('data-plane'));
+              if (!isNaN(p)) selectedPlaneType = p;
+            } catch (err) { /* ignore selection errors */ }
+          }
+        }
+      }, { passive: false });
+    }
+
+    // Bind to each plane option: double-tap selects + starts
+    planeOptions.forEach(opt => bindTouch(opt, function(e, el) {
+      if (gameStarted) return;
+      try {
+        planeOptions.forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+        const p = parseInt(el.getAttribute('data-plane'));
+        if (!isNaN(p)) selectedPlaneType = p;
+        handleStartGame(e, el);
+      } catch (err) { console.warn('plane-option touch dbl error', err); }
+    }));
+
+    // Bind to start button: double-tap triggers start
+    if (startBtn) bindTouch(startBtn, function(e) {
+      if (gameStarted) return;
+      try { handleStartGame(e); } catch (err) { document.dispatchEvent(new CustomEvent('gameStart')); }
+    });
+
+    // Bind to planeMenu: double-tap on a child plane-option will start
+    if (planeMenu) {
+      bindTouch(planeMenu, function(e) {
+        if (gameStarted) return;
+        const opt = (e.target && e.target.closest) ? e.target.closest('.plane-option') : null;
+        if (!opt) return;
+        try {
+          planeOptions.forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          const p = parseInt(opt.getAttribute('data-plane'));
+          if (!isNaN(p)) selectedPlaneType = p;
+          handleStartGame(e, opt);
+        } catch (err) { console.warn('planeMenu touch dbl error', err); }
+      });
+    }
+  })();
   
   // Selecionar o primeiro avião por padrão
   if (planeOptions[0]) {
@@ -1223,10 +1351,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Robust start handler; run in capture phase and also accept touchend events.
-  function handleStartGame(e) {
+  function handleStartGame(e, optedPlane) {
     // Prevent double triggering
     if (gameStarted) return;
     try {
+      // If an optedPlane was passed, ensure it's selected
+      if (optedPlane && optedPlane.getAttribute) {
+        try { planeOptions.forEach(opt => opt.classList.remove('selected')); } catch (e) {}
+        try { optedPlane.classList.add('selected'); } catch (e) {}
+        const p = parseInt(optedPlane.getAttribute('data-plane'));
+        if (!isNaN(p)) selectedPlaneType = p;
+      }
       gameStarted = true;
       // Defensive: ensure the button is not disabled (some logic may disable it earlier)
       try { startBtn.disabled = false; startBtn.removeAttribute('disabled'); } catch (err) {}
@@ -1240,64 +1375,20 @@ document.addEventListener('DOMContentLoaded', function() {
       console.warn('start game handler error', err);
     }
   }
-  // Use capture to ensure we get the click even if other handlers stop propagation
-  startBtn.addEventListener('click', handleStartGame, { capture: true });
-  // For touch devices, handle touchend directly
-  startBtn.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    handleStartGame(e);
-  }, { passive: false, capture: true });
-  // Also capture pointerdown to ensure early start on pointer-capable devices
-  startBtn.addEventListener('pointerdown', function(e) {
-    // Keep default behavior for mouse (left click) but ensure touchscreen/pen triggers start
-    handleStartGame(e);
-  }, { capture: true });
-  // Make the start button keyboard accessible and add pointerup capture fallback
+  // IMPORTANT: single-click/touch start handlers removed to require two-click/tap initiation.
+  // The app now only starts the game via explicit double-click (desktop) or two quick taps
+  // (mobile) handlers implemented earlier (`attachStartButtonDoubleTap`, `attachMobileTwoClickStart`)
+  // Keep the start button accessible (role/tabindex) but do NOT call `handleStartGame` on
+  // single click/touch/pointer events so that starting requires the two-click flow.
   try {
-    startBtn.tabIndex = startBtn.tabIndex || 0;
-    startBtn.setAttribute('role', 'button');
-    startBtn.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-        e.preventDefault();
-        handleStartGame(e);
-      }
-    });
+    if (startBtn) {
+      startBtn.tabIndex = startBtn.tabIndex || 0;
+      startBtn.setAttribute('role', 'button');
+      // Provide visual focus + ARIA but do not bind Enter/Space to start the game here.
+    }
   } catch (err) {
     /* ignore if startBtn not present */
   }
-
-  document.addEventListener('pointerup', function(e) {
-    if (gameStarted) return;
-    if (!startBtn) return;
-    try {
-      const r = startBtn.getBoundingClientRect();
-      // If pointer is within start button rect, call handler
-      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-        handleStartGame(e);
-      }
-    } catch (err) {
-      // ignore
-    }
-  }, { capture: true });
-  // Also listen for pointerup in case pointerdown is intercepted elsewhere
-  startBtn.addEventListener('pointerup', function(e) {
-    handleStartGame(e);
-  }, { capture: true });
-  // Some devices might send touchstart; accept it as well
-  startBtn.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    handleStartGame(e);
-  }, { passive: false, capture: true });
-
-  // Fallback delegated listener: if for some reason click doesn't reach the handler,
-  // capture from document level and trigger the start when necessary.
-  document.addEventListener('click', function(e) {
-    if (gameStarted) return;
-    // If the target is the start button or inside it, trigger the handler
-    if (e.target && e.target.closest && e.target.closest('#start-game-btn')) {
-      handleStartGame(e);
-    }
-  }, { capture: true });
 });
 
 // Plane spawner: aviao.png flies left->right, aviao1.png flies right->left
