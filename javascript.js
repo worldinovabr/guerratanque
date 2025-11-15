@@ -1222,12 +1222,82 @@ document.addEventListener('DOMContentLoaded', function() {
     planeOptions[0].classList.add('selected');
   }
   
-  startBtn.addEventListener('click', function() {
-    gameStarted = true;
-    planeMenu.style.display = 'none';
-    // Disparar evento customizado para iniciar o jogo com o avião selecionado
-    document.dispatchEvent(new CustomEvent('gameStart'));
-  });
+  // Robust start handler; run in capture phase and also accept touchend events.
+  function handleStartGame(e) {
+    // Prevent double triggering
+    if (gameStarted) return;
+    try {
+      gameStarted = true;
+      // Defensive: ensure the button is not disabled (some logic may disable it earlier)
+      try { startBtn.disabled = false; startBtn.removeAttribute('disabled'); } catch (err) {}
+      if (planeMenu) planeMenu.style.display = 'none';
+      // Dispatch custom event to start plane spawn etc.
+      document.dispatchEvent(new CustomEvent('gameStart'));
+      console.debug && console.debug('handleStartGame: dispatched gameStart', { selectedPlaneType });
+      // Stop further propagation to avoid duplicate handlers interfering
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    } catch (err) {
+      console.warn('start game handler error', err);
+    }
+  }
+  // Use capture to ensure we get the click even if other handlers stop propagation
+  startBtn.addEventListener('click', handleStartGame, { capture: true });
+  // For touch devices, handle touchend directly
+  startBtn.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    handleStartGame(e);
+  }, { passive: false, capture: true });
+  // Also capture pointerdown to ensure early start on pointer-capable devices
+  startBtn.addEventListener('pointerdown', function(e) {
+    // Keep default behavior for mouse (left click) but ensure touchscreen/pen triggers start
+    handleStartGame(e);
+  }, { capture: true });
+  // Make the start button keyboard accessible and add pointerup capture fallback
+  try {
+    startBtn.tabIndex = startBtn.tabIndex || 0;
+    startBtn.setAttribute('role', 'button');
+    startBtn.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        handleStartGame(e);
+      }
+    });
+  } catch (err) {
+    /* ignore if startBtn not present */
+  }
+
+  document.addEventListener('pointerup', function(e) {
+    if (gameStarted) return;
+    if (!startBtn) return;
+    try {
+      const r = startBtn.getBoundingClientRect();
+      // If pointer is within start button rect, call handler
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        handleStartGame(e);
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, { capture: true });
+  // Also listen for pointerup in case pointerdown is intercepted elsewhere
+  startBtn.addEventListener('pointerup', function(e) {
+    handleStartGame(e);
+  }, { capture: true });
+  // Some devices might send touchstart; accept it as well
+  startBtn.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    handleStartGame(e);
+  }, { passive: false, capture: true });
+
+  // Fallback delegated listener: if for some reason click doesn't reach the handler,
+  // capture from document level and trigger the start when necessary.
+  document.addEventListener('click', function(e) {
+    if (gameStarted) return;
+    // If the target is the start button or inside it, trigger the handler
+    if (e.target && e.target.closest && e.target.closest('#start-game-btn')) {
+      handleStartGame(e);
+    }
+  }, { capture: true });
 });
 
 // Plane spawner: aviao.png flies left->right, aviao1.png flies right->left
