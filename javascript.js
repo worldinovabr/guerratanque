@@ -781,8 +781,15 @@ function draw() {
       // --- Draw projectile ---
       if (p.owner === 0) {
         if (typeof bombaImg !== 'undefined' && bombaImg) {
-          const bw = 25; const bh = 10;
-          image(bombaImg, p.x - bw / 2, p.y - bh / 2, bw, bh);
+          const bw = 29; const bh = 19;
+          push();
+          translate(p.x, p.y);
+          // Virar bomba baseado na direção do avião (planeDir)
+          if (p.planeDir === 1) {
+            scale(-1, 1);
+          }
+          image(bombaImg, -bw / 2, -bh / 2, bw, bh);
+          pop();
         } else {
           push(); noStroke(); fill(200,30,30); ellipse(p.x, p.y, 18, 18);
           fill(120,20,20,160); ellipse(p.x, p.y+4, 10, 6); pop();
@@ -1038,7 +1045,7 @@ function disparar() {
     y: origem.y,
     vx: cos(angulo) * potencia * fatorVelocidade,
     vy: sin(angulo) * potencia * fatorVelocidade * fatorY,
-    gravidade: 0.2,
+    gravidade: 0.1,
     owner: turno
   };
   projeteis.push(proj);
@@ -1356,6 +1363,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (active) {
       active._x += active._dir * active._speed * dt;
       active.style.left = active._x + 'px';
+      
+      // Efeito de manobra vertical suave (oscilação senoidal)
+      if (!active._verticalPhase) active._verticalPhase = 0;
+      active._verticalPhase += dt * 0.8; // Velocidade da oscilação
+      const verticalOffset = Math.sin(active._verticalPhase) * 15; // Amplitude de 15px
+      const baseTop = parseFloat(active.style.top) || planeTopY;
+      active.style.top = (planeTopY + verticalOffset) + 'px';
+      
+      // Efeito de virar asa lateral suavemente (rotação 3D nos eixos X, Y e Z)
+      const tiltAngleY = Math.sin(active._verticalPhase) * 8; // Inclinação lateral até 8 graus
+      const rollAngleZ = Math.sin(active._verticalPhase * 1.3) * 5; // Balanço das asas até 5 graus
+      const pitchAngleX = Math.sin(active._verticalPhase * 0.6) * 4; // Giro vertical suave até 4 graus
+      // Rotação vertical suave (balanço de até 20 graus)
+      const swingAngleX = Math.abs(Math.sin(active._verticalPhase * 2)) * 30; // Oscila entre 0 e +30 graus (lado direito)
+      const scaleX = active._dir === 1 ? 1 : -1;
+      active.style.transform = `translateY(-50%) scaleX(${scaleX}) rotateX(${swingAngleX}deg) rotateY(${tiltAngleY}deg) rotateZ(${rollAngleZ}deg)`;
 
       // Lógica de disparo a cada 3 segundos
       try {
