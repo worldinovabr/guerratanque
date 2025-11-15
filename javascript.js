@@ -189,6 +189,11 @@ let groundFires = [];
 // independent anchor positions for ground fire/smoke (so they don't track tanks)
 let groundFireAnchors = [];
 
+// Global multiplier to scale all fire particle sizes (helps tune overall flame size)
+const FIRE_GLOBAL_SCALE = 0.65; // <1 = smaller flames, >1 = larger
+// Reduce smoke produced by explosions slightly (1.0 = unchanged)
+const EXPLOSION_SMOKE_REDUCTION = 0.72;
+
 function setGroundFireAnchor(index, x, y) {
   groundFireAnchors[index] = { x: x, y: y };
   // if a GroundFire instance exists at this index, update its position immediately
@@ -203,25 +208,38 @@ function getGroundFireAnchor(index) {
 }
 
 class FireParticle {
-  constructor(x, y, scale = 1) {
-    this.x = x + random(-6, 6);
-    this.y = y + random(-4, 4);
-    this.vx = random(-0.6, 0.6);
-    this.vy = random(-1.2, -0.4);
-    // slightly smaller flames for a more subtle look; allow per-emitter scaling
-    this.size = random(4, 12) * scale;
-    this.life = Math.floor(random(14, 30) * scale);
+  constructor(x, y, scale = 1, opts = {}) {
+    // apply a global scale to keep flame sizing tunable in one place
+    scale = (scale || 1) * FIRE_GLOBAL_SCALE;
+    this.x = x + random(-3, 3) * scale;
+    this.y = y + random(-2, 2) * scale;
+    this.vx = random(-0.3, 0.3) * (0.9 + scale * 0.2);
+    this.vy = random(-0.8, -0.2) * (0.9 + scale * 0.2);
+    // Represent flame as a thin, layered flame: length (vertical) and thickness (base width)
+    this.length = random(10, 30) * scale;
+    this.thickness = random(0.8, 2.4) * scale;
+    this.life = Math.floor(random(20, 40) * scale);
     this.age = 0;
-    this.hue = random(20, 40); // warm hue range
+    this.hue = random(16, 40); // warm hue range
+    this.wobble = random(0, TWO_PI);
+    this.rotation = random(-0.08, 0.08);
+    this.noiseOffset = random(0, 1000);
+    this.rounded = !!opts.rounded;
   }
 
   update() {
+    // Turbulence and upward flow
+    this.vx += random(-0.04, 0.04);
+    this.vy += 0.03 + random(-0.01, 0.02);
     this.x += this.vx;
     this.y += this.vy;
-    // gentle upward acceleration for flame
-    this.vy += 0.025;
-    // shrink a bit
-    this.size *= 0.98;
+    // Slight rotation and wobble to avoid perfectly vertical shapes
+    this.rotation += (sin(frameCount * 0.08 + this.wobble) * 0.001);
+    // Gradually thin and shorten the flame as it rises
+    this.length *= 0.995;
+    this.thickness *= 0.997;
+    // advance per-particle noise for animated deformation
+    this.noiseOffset += 0.012;
     this.age++;
   }
 
@@ -229,24 +247,114 @@ class FireParticle {
     push();
     translate(this.x, this.y);
     noStroke();
-    // additive glow
+    // additive glow for luminous flame layers
     blendMode(ADD);
-    const t = this.age / this.life;
-    // core
-    fill(255, 180, 40, map(1 - t, 0, 1, 0, 220));
-    ellipse(0, 0, this.size * 1.6, this.size);
-    // inner
-    fill(255, 110, 20, map(1 - t, 0, 1, 0, 180));
-    ellipse(0, 0, this.size, this.size * 0.7);
-    // tiny ember
-    fill(255, 220, 90, map(1 - t, 0, 1, 0, 120));
-    ellipse(random(-2,2), random(-2,2), max(1, this.size * 0.2));
+    const t = constrain(this.age / this.life, 0, 1);
+    if (this.rounded) {
+      // Draw deformed round blobs: multiple noisy circular layers to resemble
+      // small rounded flames/embers with slight deformation ("bolinhas deformadas").
+      const layers = 3;
+      const steps = 14; // resolution of the deformed circle
+      for (let li = 0; li < layers; li++) {
+        const layerFactor = layers === 1 ? 0 : li / (layers - 1);
+        const baseR = max(2, this.thickness * (1 + layerFactor * 1.2));
+        const colorR = lerp(255, 140, layerFactor);
+        const colorG = lerp(200, 30, layerFactor);
+        const colorB = lerp(120, 8, layerFactor);
+        const alpha = map(1 - t, 0, 1, 0, 220) * (1 - layerFactor * 0.6);
+        // deformation strength: inner layers more compact, outer layers more irregular
+        const deform = 0.28 + layerFactor * 0.6;
+        const yOffset = -this.length * (0.12 + layerFactor * 0.42);
+
+        fill(colorR, colorG, colorB, alpha);
+        push();
+        // slight rotation per layer for organic feel
+        rotate(this.rotation * (1 - layerFactor * 0.5));
+        beginShape();
+        // create a smooth noisy circle using curveVertex
+        for (let s = 0; s <= steps; s++) {
+          const a = (s / steps) * TWO_PI;
+          const n = noise(this.noiseOffset + li * 12 + s * 0.11 + frameCount * 0.008);
+          const radius = baseR * (1 + (n - 0.5) * deform);
+          const vx = cos(a) * radius;
+          const vy = sin(a) * radius + yOffset;
+          curveVertex(vx, vy);
+        }
+        endShape(CLOSE);
+        pop();
+      }
+      // small ember/particle center
+      fill(255, 230, 140, map(1 - t, 0, 1, 0, 180));
+      ellipse(0 + random(-0.9, 0.9), -this.length * 0.35 + random(-0.9, 0.9), max(0.6, this.thickness * 0.4), max(0.6, this.thickness * 0.4));
+    } else {
+      // Use multiple deformable layers drawn as noisy tapered shapes to mix forms
+      const layers = 4;
+      const segs = 10; // segments per shape (vertical)
+      for (let li = 0; li < layers; li++) {
+        // normalized layer factor 0..1 (0=core)
+        const layerFactor = li / (layers - 1);
+        // base color lerped from bright yellow to deep orange/red
+        // Darker, higher-contrast palette: bright hot core but much darker outer layers
+        const r = lerp(255, 140, layerFactor);
+        const g = lerp(200, 30, layerFactor);
+        const b = lerp(120, 8, layerFactor);
+        // Use a slightly non-linear fade so inner layers remain bright longer
+        const lifeFac = pow(constrain(1 - t, 0, 1), 1.05);
+        const baseAlpha = map(lifeFac, 0, 1, 20, 230) * (1 - layerFactor * 0.72);
+
+        // shape width scales: inner layers narrower, outer layers wider
+        const baseWidth = this.thickness * (1 + layerFactor * 1.8);
+        const baseHeight = this.length * (1 - layerFactor * 0.6);
+
+        // Build a smoother, rounded polygon using curveVertex()
+        // Create left and right side point lists and then draw a closed curved shape
+        const leftPts = [];
+        const rightPts = [];
+        const noiseFreq = 0.9 + layerFactor * 1.2; // gentler noise for roundness
+        for (let s = 0; s <= segs; s++) {
+          const v = s / segs; // 0..1 along vertical
+          const y = -v * baseHeight;
+          // smoother Perlin-based jitter; reduce amplitude near base for round bottom
+          const n = noise((this.noiseOffset + li * 12 + s * 0.07) * noiseFreq);
+          const jitter = (n - 0.5) * baseWidth * (0.45 + v * 0.9);
+          const halfW = baseWidth * (1 - v * 0.95) * 0.5;
+          leftPts.push({ x: -halfW + jitter, y: y, a: baseAlpha * (1 - v * 0.9) });
+          // right side uses separate noise offset to avoid perfect symmetry
+          const n2 = noise((this.noiseOffset + li * 12 + s * 0.07 + 37) * noiseFreq);
+          const jitter2 = (n2 - 0.5) * baseWidth * (0.45 + v * 0.9);
+          rightPts.push({ x: halfW + jitter2, y: y, a: baseAlpha * (1 - v * 0.9) });
+        }
+
+        // Draw left->right using curveVertex for smooth curves
+        fill(r, g, b, baseAlpha);
+        beginShape();
+        // duplicate first point to make curveVertex start correctly
+        const first = leftPts[0];
+        curveVertex(first.x, first.y);
+        curveVertex(first.x, first.y);
+        for (let p of leftPts) curveVertex(p.x, p.y);
+        for (let i = rightPts.length - 1; i >= 0; i--) curveVertex(rightPts[i].x, rightPts[i].y);
+        // duplicate last point to close smoothly
+        curveVertex(first.x, first.y);
+        curveVertex(first.x, first.y);
+        endShape(CLOSE);
+      }
+
+      // central ember/spark cluster
+      const emberAlpha = map(1 - t, 0, 1, 0, 200);
+      fill(255, 235, 150, emberAlpha);
+      for (let e = 0; e < 3; e++) {
+        const ex = (noise(this.noiseOffset + e * 7) - 0.5) * this.thickness * 0.6 + random(-1,1);
+        const ey = -this.length * (0.35 + random(-0.12, 0.12));
+        ellipse(ex, ey, max(0.7, this.thickness * 0.4), max(0.7, this.thickness * 0.4));
+      }
+    }
     blendMode(BLEND);
     pop();
   }
 
   isDead() {
-    return this.age >= this.life || this.size < 0.6;
+    return this.age >= this.life || this.length < 1.0 || this.thickness < 0.5;
   }
 }
 
@@ -259,7 +367,10 @@ class GroundFire {
     // per-emitter tuning
     this.smokeCount = (typeof opts.smokeCount === 'number') ? opts.smokeCount : 1;
     this.smokeIntensity = (typeof opts.smokeIntensity === 'number') ? opts.smokeIntensity : 0.55;
-    this.fireSizeScale = (typeof opts.fireSizeScale === 'number') ? opts.fireSizeScale : 1;
+    // Increase ground fire size slightly to make scene flames larger than explosions/embers.
+    // If caller provided a fireSizeScale, respect it but amplify by a modest factor.
+    const GROUND_FIRE_SCALE_BOOST = 1.3;
+    this.fireSizeScale = (typeof opts.fireSizeScale === 'number') ? opts.fireSizeScale * GROUND_FIRE_SCALE_BOOST : 1 * GROUND_FIRE_SCALE_BOOST;
     this.tick = 0;
     this.tankIndex = opts.tankIndex; // índice do tanque (0 ou 1) para acompanhar sua posição
     this.offsetX = opts.offsetX || 0; // offset X relativo ao tanque
@@ -282,7 +393,7 @@ class GroundFire {
     }
     // spawn flames more frequently
     if (this.tick % this.fireRate === 0) {
-      fireParticles.push(new FireParticle(this.x + random(-6,6), this.y + random(-4,4), this.fireSizeScale));
+      fireParticles.push(new FireParticle(this.x + random(-6,6), this.y + random(-4,4), this.fireSizeScale, { rounded: true }));
     }
   }
 }
@@ -293,6 +404,63 @@ function createGroundFireAt(x, y, opts) {
 
 function updateGroundFires() {
   for (let g of groundFires) g.update();
+}
+
+// --- Logo canvas fire: anchor + updater so the logo uses the same canvas fire system
+let logoFireAnchor = { x: null, y: null, w: 0, h: 0, tick: 0, updateEvery: 5, spawnRate: 3 };
+
+function computeLogoFireAnchor() {
+  try {
+    const title = document.getElementById('game-title');
+    const canvas = document.querySelector('canvas');
+    if (!title || !canvas) return;
+    const tr = title.getBoundingClientRect();
+    const cr = canvas.getBoundingClientRect();
+    // center-bottom of the title mapped into canvas coordinates
+    const centerX = ((tr.left + tr.width / 2 - cr.left) / cr.width) * width;
+    const bottomY = ((tr.top + tr.height - cr.top) / cr.height) * height;
+    logoFireAnchor.x = centerX;
+    logoFireAnchor.y = bottomY;
+    logoFireAnchor.w = (tr.width / cr.width) * width;
+    logoFireAnchor.h = (tr.height / cr.height) * height;
+  } catch (e) {
+    // silent fail
+  }
+}
+
+function updateLogoFire() {
+  // ensure anchor exists occasionally
+  logoFireAnchor.tick++;
+  if (!logoFireAnchor.x || logoFireAnchor.tick % (logoFireAnchor.updateEvery * 6) === 0) {
+    computeLogoFireAnchor();
+  }
+  if (!logoFireAnchor.x) return;
+
+  // spawn a few fire particles across the width of the logo area
+  if (logoFireAnchor.tick % logoFireAnchor.updateEvery === 0) {
+    const screenScale = getScreenScale();
+    const count = Math.max(1, Math.floor(logoFireAnchor.spawnRate * (screenScale || 1)));
+    for (let i = 0; i < count; i++) {
+      const fx = logoFireAnchor.x + random(-logoFireAnchor.w * 0.45, logoFireAnchor.w * 0.45) + random(-6, 6);
+      const fy = logoFireAnchor.y + random(-logoFireAnchor.h * 0.15, logoFireAnchor.h * 0.05);
+      // spawn a mix: mostly small sparks, occasional larger ember
+      const scale = random() < 0.78 ? random(0.35, 0.7) * (screenScale || 1) : random(0.8, 1.6) * (screenScale || 1);
+      // Logo/title fire should be rounded deformed blobs to match scene/explosion style
+      fireParticles.push(new FireParticle(fx, fy, scale, { rounded: true }));
+    }
+    // subtle smoke coming from the logo — reduce frequency and intensity so the
+    // title stays legible and doesn't get overwhelmed by smoke
+    if (random() < 0.35) {
+      const ss = (getScreenScale() || 1);
+      // spawn a single, light smoke puff occasionally
+      addSmoke(
+        logoFireAnchor.x + random(-logoFireAnchor.w * 0.3, logoFireAnchor.w * 0.3),
+        logoFireAnchor.y - logoFireAnchor.h * 0.08,
+        1,
+        0.28 * ss
+      );
+    }
+  }
 }
 
 function drawFireParticles() {
@@ -544,6 +712,8 @@ function draw() {
   
   // Atualiza geradores de fogo no chão
   updateGroundFires();
+  // Atualiza o fogo do logo (usa mesmas partículas do cenário)
+  updateLogoFire();
   // Atualiza partículas de fumaça (remove mortas, as novas fumaças podem ter sido adicionadas acima)
   updateSmoke();
 
@@ -736,12 +906,12 @@ function draw() {
             planeEl.style.opacity = '0.6';
             planeEl.style.filter = 'brightness(0.7)';
             explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 100 * screenScale, fade: true, alpha: 255, fadeStep: 10, img: defesaImg };
-            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.floor(3 * screenScale), 0.8 * screenScale);
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.max(1, Math.floor(3 * screenScale * EXPLOSION_SMOKE_REDUCTION)), 0.8 * screenScale * EXPLOSION_SMOKE_REDUCTION);
           } else {
             // destroyed
             explosao = { x: planeHitbox.centerX, y: planeHitbox.centerY, size: 120 * screenScale };
             explosaoTimer = 40;
-            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.floor(8 * screenScale), 1.5 * screenScale);
+            addSmoke(planeHitbox.centerX, planeHitbox.centerY, Math.max(1, Math.floor(8 * screenScale * EXPLOSION_SMOKE_REDUCTION)), 1.5 * screenScale * EXPLOSION_SMOKE_REDUCTION);
             if (p.owner === 1 || p.owner === 2) {
               placar[p.owner - 1]++;
               document.getElementById('p1score').textContent = placar[0];
@@ -832,10 +1002,10 @@ function draw() {
           const explosionY = p.y + (60 * screenScale); // Um pouco mais acima (era 80)
           const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
           for (let f = 0; f < fireCount; f++) {
-            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale, { rounded: true }));
           }
-          // Apenas uma fumaça (tamanho reduzido em 50%)
-          addSmoke(p.x, explosionY, Math.floor(8 * screenScale), 0.25 * screenScale);
+            // Apenas uma fumaça (tamanho reduzido em 50%) — reduce gently for explosions
+          addSmoke(p.x, explosionY, Math.max(1, Math.floor(8 * screenScale * EXPLOSION_SMOKE_REDUCTION)), 0.25 * screenScale * EXPLOSION_SMOKE_REDUCTION);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = (damagedIdx === 0 ? tanque1 : tanque2);
@@ -867,7 +1037,7 @@ function draw() {
           for (let flame = 0; flame < flameCount; flame++) {
             let fx = p.x + random(-20 * screenScale, 20 * screenScale);
             let fy = p.y + random(-8 * screenScale, 8 * screenScale);
-            let fire = new FireParticle(fx, fy, 1.2 * screenScale);
+            let fire = new FireParticle(fx, fy, 1.2 * screenScale, { rounded: true });
             fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
             fire.life = Math.floor(random(25, 45)); // vida mais longa
             fireParticles.push(fire);
@@ -898,11 +1068,11 @@ function draw() {
           // Efeito de explosão de fogo e fumaça quando tiro de tanque atinge adversário (no ponto do impacto)
           const fireCount = Math.floor(35 * screenScale); // Quantidade proporcional
           for (let f = 0; f < fireCount; f++) {
-            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale));
+            fireParticles.push(new FireParticle(p.x, explosionY, 2.2 * screenScale, { rounded: true }));
           }
           // Fumaça alinhada verticalmente com o fogo no ponto de impacto (tamanho reduzido)
-          addSmoke(p.x, explosionY, Math.floor(15 * screenScale), 0.9 * screenScale);
-          addSmoke(adversarioTank.x, adversarioTank.y, Math.floor(5 * screenScale), 0.7 * screenScale);
+          addSmoke(p.x, explosionY, Math.max(1, Math.floor(15 * screenScale * EXPLOSION_SMOKE_REDUCTION)), 0.9 * screenScale * EXPLOSION_SMOKE_REDUCTION);
+          addSmoke(adversarioTank.x, adversarioTank.y, Math.max(1, Math.floor(5 * screenScale * EXPLOSION_SMOKE_REDUCTION)), 0.7 * screenScale * EXPLOSION_SMOKE_REDUCTION);
           
           // Adicionar fogo contínuo que acompanha o tanque atingido
           const tankObj = adversarioTank;
@@ -927,7 +1097,7 @@ function draw() {
           for (let flame = 0; flame < flameCount; flame++) {
             let fx = p.x + random(-20 * screenScale, 20 * screenScale);
             let fy = explosionY + random(-8 * screenScale, 8 * screenScale);
-            let fire = new FireParticle(fx, fy, 1.2 * screenScale);
+            let fire = new FireParticle(fx, fy, 1.2 * screenScale, { rounded: true });
             fire.vy = random(-0.3, 0.1); // movimento mais lento para ficar visível sobre o tanque
             fire.life = Math.floor(random(25, 45)); // vida mais longa
             fireParticles.push(fire);
@@ -960,10 +1130,10 @@ function draw() {
           const fireCount = Math.floor(35 * explosionScale);
           // Adicionar partículas de fogo proporcionais
           for (let f = 0; f < fireCount; f++) {
-            fireParticles.push(new FireParticle(p.x, height - 5, 2.2 * explosionScale));
+            fireParticles.push(new FireParticle(p.x, height - 5, 2.2 * explosionScale, { rounded: true }));
           }
-          // Adicionar fumaça proporcional
-          addSmoke(p.x, height - 5, Math.floor(22 * explosionScale), 2.0 * explosionScale);
+          // Adicionar fumaça proporcional (suavizada)
+          addSmoke(p.x, height - 5, Math.max(1, Math.floor(22 * explosionScale * EXPLOSION_SMOKE_REDUCTION)), 2.0 * explosionScale * EXPLOSION_SMOKE_REDUCTION);
         }
         // simply remove the projectile; turn resolution is handled centrally below
         projeteis.splice(i, 1);
